@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+teloxide = { git = "https://github.com/teloxide/teloxide" }
+log = "0.4"
+pretty_env_logger = "0.5"
+tokio = { version =  "1.8", features = ["full"] }
+anyhow = "1.0.95"
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "mysql"] }
