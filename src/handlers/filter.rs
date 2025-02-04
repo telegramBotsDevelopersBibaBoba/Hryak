@@ -25,7 +25,7 @@ pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -
         },
         Err(_) => inline_help(bot, &q).boxed(),
     };
-
+    
     // Executing the function
     let resp = function.await;
 
