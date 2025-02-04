@@ -1,5 +1,7 @@
 use sqlx::MySqlPool;
 
+use crate::db::pigdb;
+
 pub async fn create_user(pool: &MySqlPool, user_id: u64, display_name: &str) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO users (id, display_name) VALUES (?, ?)")
         .bind(user_id)
@@ -7,7 +9,7 @@ pub async fn create_user(pool: &MySqlPool, user_id: u64, display_name: &str) -> 
         .execute(pool)
         .await?;
 
-    todo!("Write functions in pigdb, then insert a pig into 'pigs' table for this user here");
+    pigdb::create_pig(pool, user_id).await?;
 
     Ok(())
 }

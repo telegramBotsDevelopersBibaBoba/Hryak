@@ -1,6 +1,7 @@
 use std::{str::FromStr, time::Duration};
 
 use futures::FutureExt;
+use sqlx::MySqlPool;
 use teloxide::{
     prelude::{Request, Requester},
     respond,
@@ -12,15 +13,15 @@ use teloxide::{
 };
 use tokio::time::sleep;
 
-use crate::config::commands::InlineCommands;
+use crate::{config::commands::InlineCommands, db::{pigdb::get_pig_weight, userdb}};
 
-pub async fn filter_inline_commands(bot: Bot, q: InlineQuery) -> Result<(), RequestError> {
+pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -> Result<(), RequestError> {
     let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
 
     // Storing a function based on what query is that, if empty -> show 'help'
     let function = match InlineCommands::from_str(&command_str) {
         Ok(command) => match command {
-            InlineCommands::Hryak => inline_get_hryak_size(bot, &q).boxed(),
+            InlineCommands::Hryak => inline_get_hryak_size(bot, &q, &pool).boxed(),
         },
         Err(_) => inline_help(bot, &q).boxed(),
     };
@@ -37,8 +38,6 @@ pub async fn filter_inline_commands(bot: Bot, q: InlineQuery) -> Result<(), Requ
 }
 
 pub async fn inline_help(bot: Bot, q: &InlineQuery) -> Result<(), RequestError> {
-    let mass = 100;
-
     // Creating an inline button? 
     let help = InlineQueryResultArticle::new(
         "01".to_string(),
@@ -58,9 +57,11 @@ pub async fn inline_help(bot: Bot, q: &InlineQuery) -> Result<(), RequestError> 
     Ok(())
 }
 
-pub async fn inline_get_hryak_size(bot: Bot, q: &InlineQuery) -> Result<(), RequestError> {
-    let mass = 100;
+pub async fn inline_get_hryak_size(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> Result<(), RequestError> {
+    let mass = get_pig_weight(pool, q.from.id.0).await.unwrap();
+    // TODO: Better error handling
 
+    println!("done that");
     let hrundel_weight = InlineQueryResultArticle::new(
         "02".to_string(),
         "Узнать массу хряка".to_string(),
