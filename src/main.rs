@@ -39,6 +39,10 @@ async fn main() {
         )
         .branch(
             Update::filter_callback_query().endpoint(handlers::callback::filter_callback_commands),
+        )
+        .branch(
+            Update::filter_chosen_inline_result()
+                .endpoint(handlers::feedback::filter_inline_chosen_command),
         );
 
     Dispatcher::builder(bot, handler)

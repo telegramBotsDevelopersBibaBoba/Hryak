@@ -5,6 +5,7 @@ use teloxide::types::{
     InputMessageContent, InputMessageContentText,
 };
 
+use crate::db::pigdb::get_pig_by_user_id;
 use crate::db::{pigdb::get_pig_weight, userdb};
 use crate::handlers::keyboard;
 
@@ -12,19 +13,22 @@ pub async fn inline_hryak_weight_article(
     q: &InlineQuery,
     pool: &MySqlPool,
 ) -> anyhow::Result<InlineQueryResultArticle> {
-    let mass = match get_pig_weight(pool, q.from.id.0).await {
+    let pig = match get_pig_by_user_id(pool, q.from.id.0).await {
         Ok(mass) => mass,
         Err(why) => {
+            eprintln!("{}", why);
+            todo!("USer creaed try again message");
             userdb::create_user(pool, q.from.id.0, &q.from.first_name).await?;
+
             return Err(anyhow!("{}", why));
         }
     };
 
     let hrundel_weight = InlineQueryResultArticle::new(
         "02".to_string(),
-        "Узнать массу хряка".to_string(),
+        "Узнать инфу о хряке".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(
-            format!("Размер хряка: {} кг.", mass.to_string())
+            format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight)
         )),
     )
     .description("Hryak")
@@ -70,4 +74,40 @@ pub async fn TEST_inline_shop_article(
     )
     .reply_markup(keyboard::TEST_make_shop()); // Showing a 'keyboard' with all the additional inline queries
     Ok(shop)
+}
+
+pub async fn inline_name_article() -> anyhow::Result<InlineQueryResultArticle> {
+    let name = InlineQueryResultArticle::new(
+        "04",
+        "Поменять имя у хряка",
+        InputMessageContent::Text(InputMessageContentText::new(
+            "Чтобы сменить имя, нужно ввести 'имя новое_имя'",
+        )),
+    )
+    .description("Введите пробел и имя")
+    .thumbnail_url(
+        "https://www.lifewithpigs.com/uploads/7/7/7/1/77712458/published/luckpig.png?1518827974"
+            .parse()
+            .unwrap(),
+    );
+    Ok(name)
+}
+
+pub async fn inline_change_name_article(
+    new_name: &str,
+) -> anyhow::Result<InlineQueryResultArticle> {
+    let name = InlineQueryResultArticle::new(
+        "05",
+        "Меняем имя у хряка...",
+        InputMessageContent::Text(InputMessageContentText::new(
+            format!("Имя хрюнделя было изменено на {}", new_name)
+        )),
+    )
+    .description("Нажмите на кнопку, чтобы сменить имя")
+    .thumbnail_url(
+        "https://media.licdn.com/dms/image/v2/C4E12AQHOTlp8TuFzxg/article-inline_image-shrink_1000_1488/article-inline_image-shrink_1000_1488/0/1520148182297?e=1743033600&v=beta&t=3zE1S7YVIL8QQ7JCyuSvy6Flj9Bm_27l6mRLJmU3Lzo"
+            .parse()
+            .unwrap(),
+    );
+    Ok(name)
 }

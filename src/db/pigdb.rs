@@ -46,3 +46,13 @@ pub async fn get_pig_by_user_id(pool: &MySqlPool, user_id: u64) -> anyhow::Resul
 
     Pig::from_mysql_row(row)
 }
+
+pub async fn set_pig_name(pool: &MySqlPool, name: &str, user_id: u64) -> anyhow::Result<()> {
+    sqlx::query("UPDATE pigs SET name = ? WHERE user_id = ?")
+        .bind(name)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
