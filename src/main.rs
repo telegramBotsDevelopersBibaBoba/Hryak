@@ -12,6 +12,7 @@ use teloxide::{
 };
 
 mod config;
+mod controllers;
 mod db;
 mod handlers;
 
@@ -23,11 +24,11 @@ async fn main() {
     let con_str = "mysql://klewy:root@localhost:3306/hryak";
 
     let pool = sqlx::mysql::MySqlPoolOptions::new()
-    .max_connections(10)
-    .acquire_timeout(Duration::from_secs(5))
-    .connect(&con_str)
-    .await
-    .expect("Cant connect fuck it");
+        .max_connections(10)
+        .acquire_timeout(Duration::from_secs(5))
+        .connect(&con_str)
+        .await
+        .expect("Cant connect fuck it");
 
     let bot = Bot::from_env(); // Setting up bot from TELOXIDE_TOKEN env variable (P.S 'export TELOXIDE_TOKEN=<token>' in terminal)
 

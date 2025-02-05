@@ -1,3 +1,4 @@
+use crate::controllers::pig::Pig;
 use sqlx::types::BigDecimal;
 use sqlx::MySqlPool;
 use sqlx::Row;
@@ -35,4 +36,13 @@ pub async fn get_pig_weight(pool: &MySqlPool, user_id: u64) -> anyhow::Result<f3
     let weight = row.try_get::<f32, _>(0)?;
 
     Ok(weight)
+}
+
+pub async fn get_pig_by_user_id(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
+    let row = sqlx::query("SELECT * FROM pigs WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
+
+    Pig::from_mysql_row(row)
 }
