@@ -34,7 +34,12 @@ async fn main() {
 
     // Just boilerplate stuff
     let handler = dptree::entry()
-        .branch(Update::filter_inline_query().endpoint(handlers::filter::filter_inline_commands));
+        .branch(
+            Update::filter_inline_query().endpoint(handlers::inline_filter::filter_inline_commands),
+        )
+        .branch(
+            Update::filter_callback_query().endpoint(handlers::callback::filter_callback_commands),
+        );
 
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![pool])
