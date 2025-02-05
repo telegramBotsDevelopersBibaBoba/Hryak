@@ -1,6 +1,6 @@
-use sqlx::types::BigDecimal;
-use sqlx::MySqlPool;
-use sqlx::Row;
+use sqlx::{mysql::MySqlRow, MySqlPool, Row};
+use anyhow::anyhow;
+use crate::controllers::pig::Pig;
 
 pub async fn create_pig(pool: &MySqlPool, user_id: u64) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO pigs (user_id) VALUES (?)")
@@ -15,7 +15,13 @@ pub async fn get_pig_weight(pool: &MySqlPool, user_id: u64) -> anyhow::Result<f3
     .bind(user_id)
     .fetch_one(pool).await?;
     
-    let weight = row.try_get::<f32, _>(0)?;
+    row.try_get::<f32, _>(0).map_err(|why| anyhow!("{}", why))
+}
 
-    Ok(weight)
+pub async fn get_pig_by_user_id(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
+    let row = sqlx::query("SELECT * FROM pigs WHERE user_id = ?")
+    .bind(user_id)
+    .fetch_one(pool).await?;
+
+    Pig::from_mysql_row(row)
 }

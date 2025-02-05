@@ -13,7 +13,7 @@ use teloxide::{
 };
 use tokio::time::sleep;
 
-use crate::{config::commands::InlineCommands, db::{pigdb::get_pig_weight, userdb}};
+use crate::{config::commands::InlineCommands, db::{pigdb::{self, get_pig_weight}, userdb}};
 
 pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -> Result<(), RequestError> {
     let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
@@ -58,7 +58,7 @@ pub async fn inline_help(bot: Bot, q: &InlineQuery) -> Result<(), RequestError> 
 }
 
 pub async fn inline_get_hryak_size(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> Result<(), RequestError> {
-    let mass = get_pig_weight(pool, q.from.id.0).await.unwrap();
+    let mass = pigdb::get_pig_weight(pool, q.from.id.0).await.unwrap();
     // TODO: Better error handling
 
     println!("done that");

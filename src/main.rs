@@ -12,6 +12,7 @@ use teloxide::{
 };
 
 mod config;
+mod controllers;
 mod db;
 mod handlers;
 
