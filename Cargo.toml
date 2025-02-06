@@ -9,6 +9,7 @@ log = "0.4"
 pretty_env_logger = "0.5"
 tokio = { version =  "1.8", features = ["full"] }
 anyhow = "1.0.95"
-sqlx = { version = "0.8.3", features = ["runtime-tokio", "mysql"] }
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "mysql", "bigdecimal"] }
 futures = "0.3.31"
 strum = { version = "0.26.3", features = ["derive"] }
+thiserror = "2.0.11"
