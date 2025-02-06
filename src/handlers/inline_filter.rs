@@ -44,6 +44,7 @@ pub async fn filter_inline_commands(
                 InlineCommands::Hryak => inline_hryak_weight(bot, &q, &pool).boxed(),
                 InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
                 InlineCommands::Name => inline_name(bot, &q).boxed(),
+                InlineCommands::Duel => inline_duel(bot, &q).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -65,12 +66,14 @@ pub async fn inline_all_commands(
     pool: &MySqlPool,
 ) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_weight_article(q, pool).await?;
+    let duel = articles::inline_duel_article().await?;
     let help = articles::inline_help_article(q, pool).await.unwrap();
-    let test_shop = articles::TEST_inline_shop_article(q, pool).await.unwrap();
+    let test_shop = articles::inline_shop_article(q, pool).await.unwrap();
 
     // Showing several articles at once
     let articles = vec![
         InlineQueryResult::Article(hryak),
+        InlineQueryResult::Article(duel),
         InlineQueryResult::Article(test_shop),
         InlineQueryResult::Article(help),
     ];
@@ -99,7 +102,7 @@ pub async fn inline_hryak_weight(
 }
 
 pub async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let shop = articles::TEST_inline_shop_article(q, pool).await?;
+    let shop = articles::inline_shop_article(q, pool).await?;
 
     let articles = vec![InlineQueryResult::Article(shop)];
 
@@ -126,6 +129,18 @@ pub async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow
     let changename = articles::inline_change_name_article(data).await?;
 
     let articles = vec![InlineQueryResult::Article(changename)];
+    let response = bot
+        .answer_inline_query(&q.id, articles)
+        .cache_time(0)
+        .await?;
+    Ok(())
+}
+
+pub async fn inline_duel(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
+    let duel = articles::inline_duel_article().await?;
+
+    let articles = vec![InlineQueryResult::Article(duel)];
+
     let response = bot
         .answer_inline_query(&q.id, articles)
         .cache_time(0)
