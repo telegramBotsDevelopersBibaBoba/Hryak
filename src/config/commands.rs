@@ -8,6 +8,8 @@ pub enum InlineCommands {
     Shop,
     #[strum(serialize = "name", serialize = "имя")]
     Name,
+    #[strum(serialize = "duel", serialize = "дуэль")]
+    Duel,
 }
 
 #[derive(Display, EnumString)]
@@ -18,7 +20,7 @@ pub enum CallbackCommands {
 
 #[derive(Display, EnumString)]
 pub enum InlineAdvCommands {
-    #[strum(serialize = "имя")]
+    #[strum(serialize = "имя", serialize = "name")]
     ChangeName,
 }
 

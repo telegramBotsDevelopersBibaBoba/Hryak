@@ -9,6 +9,8 @@ use crate::db::pigdb::get_pig_by_user_id;
 use crate::db::{pigdb::get_pig_weight, userdb};
 use crate::handlers::keyboard;
 
+use super::keyboard::make_duel;
+
 pub async fn inline_hryak_weight_article(
     q: &InlineQuery,
     pool: &MySqlPool,
@@ -25,7 +27,7 @@ pub async fn inline_hryak_weight_article(
     };
 
     let hrundel_weight = InlineQueryResultArticle::new(
-        "02".to_string(),
+        "hryak".to_string(),
         "Узнать инфу о хряке".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(
             format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight)
@@ -41,7 +43,7 @@ pub async fn inline_help_article(
     pool: &MySqlPool,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let help = InlineQueryResultArticle::new(
-        "01".to_string(),
+        "help".to_string(),
         "Узнать все доступные команды".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(
             "Вот список доступных комманд:",
@@ -57,12 +59,12 @@ pub async fn inline_help_article(
     Ok(help)
 }
 
-pub async fn TEST_inline_shop_article(
+pub async fn inline_shop_article(
     q: &InlineQuery,
     pool: &MySqlPool,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let shop = InlineQueryResultArticle::new(
-        "03".to_string(),
+        "shop".to_string(),
         "Закупки".to_string(),
         InputMessageContent::Text(InputMessageContentText::new("Покупай:")),
     )
@@ -72,13 +74,13 @@ pub async fn TEST_inline_shop_article(
             .parse()
             .unwrap(),
     )
-    .reply_markup(keyboard::TEST_make_shop()); // Showing a 'keyboard' with all the additional inline queries
+    .reply_markup(keyboard::make_shop()); // Showing a 'keyboard' with all the additional inline queries
     Ok(shop)
 }
 
 pub async fn inline_name_article() -> anyhow::Result<InlineQueryResultArticle> {
     let name = InlineQueryResultArticle::new(
-        "04",
+        "name",
         "Поменять имя у хряка",
         InputMessageContent::Text(InputMessageContentText::new(
             "Чтобы сменить имя, нужно ввести 'имя новое_имя'",
@@ -97,7 +99,7 @@ pub async fn inline_change_name_article(
     new_name: &str,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let name = InlineQueryResultArticle::new(
-        "05",
+        "change_name",
         "Меняем имя у хряка...",
         InputMessageContent::Text(InputMessageContentText::new(
             format!("Имя хрюнделя было изменено на {}", new_name)
@@ -109,5 +111,24 @@ pub async fn inline_change_name_article(
             .parse()
             .unwrap(),
     );
+    Ok(name)
+}
+
+pub async fn inline_duel_article(/* write arguments here */
+) -> anyhow::Result<InlineQueryResultArticle> {
+    let name = InlineQueryResultArticle::new(
+        "duel",
+        "Нажмите, чтобы выслать приглашение на дуэль",
+        InputMessageContent::Text(InputMessageContentText::new(
+            format!("Нажмите на кнопку, чтобы начать дуэль!")
+        )),
+    )
+    .description("Свинодуэль")
+    .thumbnail_url(
+        "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig"
+            .parse()
+            .unwrap(),
+    )
+    .reply_markup(make_duel());
     Ok(name)
 }
