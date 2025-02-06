@@ -1,3 +1,4 @@
+use rand::Rng;
 use sqlx::{mysql::MySqlRow, Row};
 
 pub struct Pig {
@@ -23,5 +24,15 @@ impl Pig {
             attack,
             name,
         })
+    }
+    pub fn duel(&self, other_pig: &Pig) -> bool {
+        let mass_weight = 0.3;
+        let power_first = self.attack + mass_weight * self.weight;
+        let power_second = other_pig.attack + mass_weight * other_pig.weight;
+
+        let final_first = power_first * rand::rng().random_range(0.9..=1.1);
+        let final_second = power_second * rand::rng().random_range(0.9..=1.1);
+
+        final_first > final_second
     }
 }

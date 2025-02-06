@@ -16,6 +16,8 @@ pub enum InlineCommands {
 pub enum CallbackCommands {
     #[strum(serialize = "shop")]
     Shop,
+    #[strum(serialize = "duel")]
+    StartDuel,
 }
 
 #[derive(Display, EnumString)]

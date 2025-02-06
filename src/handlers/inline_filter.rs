@@ -41,7 +41,7 @@ pub async fn filter_inline_commands(
         },
         None => match InlineCommands::from_str(command_str) {
             Ok(command) => match command {
-                InlineCommands::Hryak => inline_hryak_weight(bot, &q, &pool).boxed(),
+                InlineCommands::Hryak => inline_hryak_info(bot, &q, &pool).boxed(),
                 InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
                 InlineCommands::Name => inline_name(bot, &q).boxed(),
                 InlineCommands::Duel => inline_duel(bot, &q).boxed(),
@@ -65,8 +65,8 @@ pub async fn inline_all_commands(
     q: &InlineQuery,
     pool: &MySqlPool,
 ) -> anyhow::Result<()> {
-    let hryak = articles::inline_hryak_weight_article(q, pool).await?;
-    let duel = articles::inline_duel_article().await?;
+    let hryak = articles::inline_hryak_info_article(q, pool).await?;
+    let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap()).await?;
     let help = articles::inline_help_article(q, pool).await.unwrap();
     let test_shop = articles::inline_shop_article(q, pool).await.unwrap();
 
@@ -85,12 +85,8 @@ pub async fn inline_all_commands(
     Ok(())
 }
 
-pub async fn inline_hryak_weight(
-    bot: Bot,
-    q: &InlineQuery,
-    pool: &MySqlPool,
-) -> anyhow::Result<()> {
-    let hryak = articles::inline_hryak_weight_article(q, pool).await?;
+pub async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+    let hryak = articles::inline_hryak_info_article(q, pool).await?;
 
     let articles = vec![InlineQueryResult::Article(hryak)];
 
@@ -137,7 +133,7 @@ pub async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow
 }
 
 pub async fn inline_duel(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
-    let duel = articles::inline_duel_article().await?;
+    let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap()).await?;
 
     let articles = vec![InlineQueryResult::Article(duel)];
 

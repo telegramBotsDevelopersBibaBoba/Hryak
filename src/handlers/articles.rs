@@ -11,7 +11,7 @@ use crate::handlers::keyboard;
 
 use super::keyboard::make_duel;
 
-pub async fn inline_hryak_weight_article(
+pub async fn inline_hryak_info_article(
     q: &InlineQuery,
     pool: &MySqlPool,
 ) -> anyhow::Result<InlineQueryResultArticle> {
@@ -19,10 +19,19 @@ pub async fn inline_hryak_weight_article(
         Ok(mass) => mass,
         Err(why) => {
             eprintln!("{}", why);
-            todo!("USer creaed try again message");
             userdb::create_user(pool, q.from.id.0, &q.from.first_name).await?;
 
-            return Err(anyhow!("{}", why));
+            let hrundel_weight = InlineQueryResultArticle::new(
+                "hryak".to_string(),
+                "Ваш первый хрюндель был создан".to_string(),
+                InputMessageContent::Text(InputMessageContentText::new(
+                    format!("Введите команду еще раз")
+                )),
+            )
+            .description("Для корректного отображения введите команду еще раз")
+            .thumbnail_url("https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".parse().unwrap());
+
+            return Ok(hrundel_weight);
         }
     };
 
@@ -114,7 +123,9 @@ pub async fn inline_change_name_article(
     Ok(name)
 }
 
-pub async fn inline_duel_article(/* write arguments here */
+pub async fn inline_duel_article(
+    duel_maker_id: u64,
+    duel_maker_mention: String,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let name = InlineQueryResultArticle::new(
         "duel",
@@ -129,6 +140,6 @@ pub async fn inline_duel_article(/* write arguments here */
             .parse()
             .unwrap(),
     )
-    .reply_markup(make_duel());
+    .reply_markup(make_duel(duel_maker_id, duel_maker_mention));
     Ok(name)
 }

@@ -17,3 +17,4 @@ sqlx = { version = "0.8.3", features = [
 ] }
 futures = "0.3.31"
 strum = { version = "0.26.3", features = ["derive"] }
+rand = "0.9.0"
