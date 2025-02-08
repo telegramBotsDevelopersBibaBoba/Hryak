@@ -56,3 +56,13 @@ pub async fn set_pig_name(pool: &MySqlPool, name: &str, user_id: u64) -> anyhow:
 
     Ok(())
 }
+
+pub async fn set_pig_weight(pool: &MySqlPool, new_weight: f64, user_id: u64) -> anyhow::Result<()> {
+    sqlx::query("UPDATE pigs SET weight = ? WHERE user_id = ?")
+        .bind(new_weight)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
