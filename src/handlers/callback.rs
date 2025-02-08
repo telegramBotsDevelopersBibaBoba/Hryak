@@ -85,7 +85,7 @@ pub async fn callbak_start_duel(
     }
 
     let host_id = data[0].trim().parse::<u64>().unwrap();
-    println!("{} {}", part_id, host_id);
+
     if !pigdb::pig_exists(pool, host_id).await || !pigdb::pig_exists(pool, part_id).await {
         bot.edit_message_text_inline(
             q.inline_message_id.as_ref().unwrap(),
@@ -101,6 +101,7 @@ pub async fn callbak_start_duel(
             .text("Нельзя дуэлить себя идиот гадэмн бля")
             .send()
             .await?;
+        return Ok(());
     }
 
     bot.edit_message_text_inline(

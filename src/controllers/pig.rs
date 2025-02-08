@@ -13,9 +13,9 @@ impl Pig {
     pub fn from_mysql_row(row: MySqlRow) -> anyhow::Result<Self> {
         let id = row.try_get::<i64, _>(0)?;
         let user_id = row.try_get::<i64, _>(1)?;
-        let weight = row.try_get::<f64, _>(3)?;
-        let attack = row.try_get::<f64, _>(4)?;
-        let name = row.try_get::<String, _>(2)?;
+        let weight = row.try_get::<f64, _>(2)?;
+        let attack = row.try_get::<f64, _>(3)?;
+        let name = row.try_get::<String, _>(4)?;
 
         Ok(Self {
             id,
