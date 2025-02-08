@@ -11,7 +11,7 @@ use teloxide::{
 };
 use tokio::time::sleep;
 
-use crate::{config::commands::CallbackCommands, db::pigdb};
+use crate::{config::commands::CallbackCommands, db::pigdb, deser_command};
 
 use super::keyboard::make_shop;
 
@@ -20,16 +20,14 @@ pub async fn filter_callback_commands(
     q: CallbackQuery,
     pool: MySqlPool,
 ) -> Result<(), RequestError> {
-    let data_vec = q
-        .data
-        .clone()
-        .unwrap_or("nothing".to_owned())
-        .split(" ")
-        .map(|element| element.to_string())
-        .collect::<Vec<String>>();
+    if q.data.is_none() {
+        callback_error(&bot, &q).await.unwrap();
+    }
+
+    let data_vec = deser_command!(q.data.as_ref().unwrap());
 
     // Parsing query and figuring out a command based on it
-    let function = match CallbackCommands::from_str(&data_vec[0]) {
+    let function = match CallbackCommands::from_str(data_vec[0]) {
         Ok(command) => match command {
             CallbackCommands::Shop => callback_shop(&bot, &q, &data_vec[1..]).boxed(), // args are <type> <name>
             CallbackCommands::StartDuel => {
@@ -54,7 +52,7 @@ pub async fn callback_error(bot: &Bot, q: &CallbackQuery) -> anyhow::Result<()> 
     Ok(())
 }
 
-pub async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[String]) -> anyhow::Result<()> {
+pub async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str]) -> anyhow::Result<()> {
     bot.answer_callback_query(&q.id)
         .text(format!("Покупка была успешно совершена!"))
         .await?;
@@ -70,7 +68,7 @@ pub async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[String]) -> any
 pub async fn callbak_start_duel(
     bot: &Bot,
     q: &CallbackQuery,
-    data: &[String],
+    data: &[&str],
     part_id: u64,
     pool: &MySqlPool,
 ) -> anyhow::Result<()> {
@@ -85,7 +83,7 @@ pub async fn callbak_start_duel(
     }
 
     let host_id = data[0].trim().parse::<u64>().unwrap();
-    println!("{} {}", part_id, host_id);
+
     if !pigdb::pig_exists(pool, host_id).await || !pigdb::pig_exists(pool, part_id).await {
         bot.edit_message_text_inline(
             q.inline_message_id.as_ref().unwrap(),
@@ -101,6 +99,7 @@ pub async fn callbak_start_duel(
             .text("Нельзя дуэлить себя идиот гадэмн бля")
             .send()
             .await?;
+        return Ok(());
     }
 
     bot.edit_message_text_inline(

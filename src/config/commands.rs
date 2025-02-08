@@ -2,6 +2,7 @@ use strum::{Display, EnumString};
 
 #[derive(Display, EnumString)]
 pub enum InlineCommands {
+    // Single-word commands
     #[strum(serialize = "hryak", serialize = "хряк")]
     Hryak,
     #[strum(serialize = "shop", serialize = "магазин")]
@@ -13,17 +14,18 @@ pub enum InlineCommands {
 }
 
 #[derive(Display, EnumString)]
+pub enum InlineAdvCommands {
+    // Commands with arguments
+    #[strum(serialize = "имя", serialize = "name")]
+    ChangeName,
+}
+
+#[derive(Display, EnumString)]
 pub enum CallbackCommands {
     #[strum(serialize = "shop")]
     Shop,
     #[strum(serialize = "duel")]
     StartDuel,
-}
-
-#[derive(Display, EnumString)]
-pub enum InlineAdvCommands {
-    #[strum(serialize = "имя", serialize = "name")]
-    ChangeName,
 }
 
 #[derive(Display, EnumString)]

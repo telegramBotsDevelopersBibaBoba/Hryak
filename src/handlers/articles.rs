@@ -124,8 +124,8 @@ pub async fn inline_change_name_article(
 }
 
 pub async fn inline_duel_article(
-    duel_maker_id: u64,
-    duel_maker_mention: String,
+    duel_host_id: u64,
+    duel_host_mention: String,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let name = InlineQueryResultArticle::new(
         "duel",
@@ -140,6 +140,6 @@ pub async fn inline_duel_article(
             .parse()
             .unwrap(),
     )
-    .reply_markup(make_duel(duel_maker_id, duel_maker_mention));
+    .reply_markup(make_duel(duel_host_id, duel_host_mention));
     Ok(name)
 }

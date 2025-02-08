@@ -1,5 +1,7 @@
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
+use crate::ser_command;
+
 pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
     let button = InlineKeyboardButton::switch_inline_query_current_chat("Узнать про хряка", "хряк");
     let button2 =
@@ -14,8 +16,11 @@ pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
 pub fn make_shop() -> InlineKeyboardMarkup {
     // Make different buttons
     let buttons = vec![
-        InlineKeyboardButton::callback("Купить боярышник х1", "shop food boyarishnik"),
-        InlineKeyboardButton::callback("Купить ничего", "shop food nothing"),
+        InlineKeyboardButton::callback(
+            "Купить боярышник х1",
+            ser_command!("shop", "food", "boyarishnik"),
+        ),
+        InlineKeyboardButton::callback("Купить ничего", ser_command!("shop", "food", "nothing")),
     ];
 
     InlineKeyboardMarkup::new([buttons])
@@ -26,7 +31,11 @@ pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String) -> InlineKeyboa
         // Perhaps  should store duel sender id
         InlineKeyboardButton::callback(
             "Начать дуэль",
-            format!("duel {} {}", duel_maker_id, duel_maker_mention),
+            ser_command!(
+                "duel",
+                &duel_maker_id.to_string(),
+                &duel_maker_mention.to_string()
+            ),
         ),
     ];
 
