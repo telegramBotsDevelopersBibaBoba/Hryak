@@ -1,5 +1,7 @@
 use rand::Rng;
-use sqlx::{mysql::MySqlRow, Row};
+use sqlx::{mysql::MySqlRow, MySqlPool, Row};
+
+use crate::db::pigdb;
 
 pub struct Pig {
     id: i64,
@@ -35,4 +37,26 @@ impl Pig {
 
         final_first > final_second
     }
+}
+
+pub async fn proccess_duel_results(
+    pool: &MySqlPool,
+    pig_winner: &Pig,
+    pig_loser: &Pig,
+    winner_id: u64,
+    loser_id: u64,
+) -> anyhow::Result<()> {
+    let new_weight = pig_winner.weight + pig_loser.weight * 0.1;
+    pigdb::set_pig_weight(pool, new_weight, winner_id).await?;
+
+    let mut new_loser_weight = pig_loser.weight * 0.9;
+    if new_loser_weight < 10.0 {
+        new_loser_weight = 10.0;
+    }
+
+    // TODO: econmy stuff (like take n% amount of money from loser and give it to winner)
+
+    pigdb::set_pig_weight(pool, new_loser_weight, loser_id).await?;
+
+    Ok(())
 }

@@ -11,7 +11,10 @@ use teloxide::{
 };
 use tokio::time::sleep;
 
-use crate::{config::commands::CallbackCommands, db::pigdb, deser_command};
+use crate::{
+    config::commands::CallbackCommands, controllers::pig::proccess_duel_results, db::pigdb,
+    deser_command,
+};
 
 pub async fn filter_callback_commands(
     bot: Bot,
@@ -127,11 +130,7 @@ async fn callbak_start_duel(
         .await?;
 
     if pig_first.duel(&pig_second) {
-        let new_weight = pig_first.weight + pig_second.weight * 0.1;
-        pigdb::set_pig_weight(pool, new_weight, host_id).await?;
-
-        // Do something to loser
-
+        proccess_duel_results(pool, &pig_first, &pig_second, host_id, part_id).await?;
         // Host won Setup result message
         let msg = format!("Победителем оказался: {}", data[1]);
         bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
@@ -143,10 +142,7 @@ async fn callbak_start_duel(
             .send()
             .await?;
     } else {
-        let new_weight = pig_second.weight + pig_first.weight * 0.1;
-        pigdb::set_pig_weight(pool, new_weight, part_id).await?;
-
-        // Do something to user
+        proccess_duel_results(pool, &pig_second, &pig_first, part_id, host_id).await?;
 
         // Setup result message
         let msg = format!("Победителем оказался: {}", q.from.mention().unwrap());
