@@ -47,10 +47,7 @@ pub async fn inline_hryak_info_article(
 
     Ok(hrundel_weight)
 }
-pub async fn inline_help_article(
-    q: &InlineQuery,
-    pool: &MySqlPool,
-) -> anyhow::Result<InlineQueryResultArticle> {
+pub fn inline_help_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResultArticle {
     let help = InlineQueryResultArticle::new(
         "help".to_string(),
         "Узнать все доступные команды".to_string(),
@@ -65,13 +62,10 @@ pub async fn inline_help_article(
             .unwrap(),
     )
     .reply_markup(keyboard::make_more_info_keyboard()); // Showing a 'keyboard' with all the additional inline queries
-    Ok(help)
+    help
 }
 
-pub async fn inline_shop_article(
-    q: &InlineQuery,
-    pool: &MySqlPool,
-) -> anyhow::Result<InlineQueryResultArticle> {
+pub fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResultArticle {
     let shop = InlineQueryResultArticle::new(
         "shop".to_string(),
         "Закупки".to_string(),
@@ -84,10 +78,10 @@ pub async fn inline_shop_article(
             .unwrap(),
     )
     .reply_markup(keyboard::make_shop()); // Showing a 'keyboard' with all the additional inline queries
-    Ok(shop)
+    shop
 }
 
-pub async fn inline_name_article() -> anyhow::Result<InlineQueryResultArticle> {
+pub fn inline_name_article() -> InlineQueryResultArticle {
     let name = InlineQueryResultArticle::new(
         "name",
         "Поменять имя у хряка",
@@ -101,12 +95,15 @@ pub async fn inline_name_article() -> anyhow::Result<InlineQueryResultArticle> {
             .parse()
             .unwrap(),
     );
-    Ok(name)
+    name
 }
 
-pub async fn inline_change_name_article(
-    new_name: &str,
-) -> anyhow::Result<InlineQueryResultArticle> {
+pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
+    let new_name = if new_name.is_empty() {
+        "Unnamed"
+    } else {
+        new_name
+    };
     let name = InlineQueryResultArticle::new(
         "change_name",
         "Меняем имя у хряка...",
@@ -120,13 +117,13 @@ pub async fn inline_change_name_article(
             .parse()
             .unwrap(),
     );
-    Ok(name)
+    name
 }
 
-pub async fn inline_duel_article(
+pub fn inline_duel_article(
     duel_host_id: u64,
     duel_host_mention: String,
-) -> anyhow::Result<InlineQueryResultArticle> {
+) -> InlineQueryResultArticle {
     let name = InlineQueryResultArticle::new(
         "duel",
         "Нажмите, чтобы выслать приглашение на дуэль",
@@ -141,5 +138,17 @@ pub async fn inline_duel_article(
             .unwrap(),
     )
     .reply_markup(make_duel(duel_host_id, duel_host_mention));
-    Ok(name)
+    name
+}
+
+pub fn inline_no_pig_article() -> InlineQueryResultArticle {
+    let message = "You don't have a pig yet! Please adopt one before dueling!";
+    InlineQueryResultArticle::new(
+        "no_pig",
+        "Вы не можете начать дуэль без собственной свиньи!\nЧтобы создать ее введите команду hryak",
+        InputMessageContent::Text(InputMessageContentText::new(message)),
+    )
+    .description("You don't have a pig yet!")
+    // Optionally, you can add a thumbnail URL if desired:
+    // .thumbnail_url("https://example.com/path/to/thumbnail.jpg".parse().unwrap())
 }
