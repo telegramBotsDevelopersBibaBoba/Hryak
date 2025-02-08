@@ -4,27 +4,26 @@ use futures::FutureExt;
 use sqlx::MySqlPool;
 use teloxide::{types::ChosenInlineResult, Bot, RequestError};
 
-use crate::{config::commands::FeedbackCommands, db::pigdb};
+use crate::{config::commands::FeedbackCommands, db::pigdb, deser_command};
 
 pub async fn filter_inline_chosen_command(
+    // Called when you click on a query
     bot: Bot,
     q: ChosenInlineResult,
     pool: MySqlPool,
 ) -> Result<(), RequestError> {
-    let mut params = q
-        .query
-        .clone()
-        .split(" ")
-        .map(|el| el.to_string())
-        .collect::<Vec<String>>();
+    if q.query.is_empty() {
+        return Ok(());
+    }
+    let args = deser_command!(q.query);
 
-    let function = match FeedbackCommands::from_str(&params[0]) {
+    let function = match FeedbackCommands::from_str(args[0]) {
         Ok(com) => match com {
             FeedbackCommands::ChangeName => {
-                feedback_rename_hryak(bot, &q, &params[1..], &pool).boxed()
+                feedback_rename_hryak(bot, &q, &args[1..], &pool).boxed()
             }
         },
-        Err(why) => return Ok(()),
+        Err(why) => return Ok(()), // If it's not any command it's just better to skip it (return Ok) since it may have not been intended to come here
     };
 
     let resp = function.await;
@@ -37,7 +36,7 @@ pub async fn filter_inline_chosen_command(
 pub async fn feedback_rename_hryak(
     bot: Bot,
     q: &ChosenInlineResult,
-    args: &[String],
+    args: &[&str],
     pool: &MySqlPool,
 ) -> anyhow::Result<()> {
     println!("here");
