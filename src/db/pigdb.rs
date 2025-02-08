@@ -48,6 +48,7 @@ pub async fn get_pig_by_user_id(pool: &MySqlPool, user_id: u64) -> anyhow::Resul
 }
 
 pub async fn set_pig_name(pool: &MySqlPool, name: &str, user_id: u64) -> anyhow::Result<()> {
+    let name = if name.is_empty() { "Unnamed" } else { name };
     sqlx::query("UPDATE pigs SET name = ? WHERE user_id = ?")
         .bind(name)
         .bind(user_id)

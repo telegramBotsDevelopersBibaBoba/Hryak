@@ -13,13 +13,12 @@ use tokio::time::sleep;
 
 use crate::{config::commands::CallbackCommands, db::pigdb, deser_command};
 
-use super::keyboard::make_shop;
-
 pub async fn filter_callback_commands(
     bot: Bot,
     q: CallbackQuery,
     pool: MySqlPool,
 ) -> Result<(), RequestError> {
+    // Called usually when you click on a button
     if q.data.is_none() {
         callback_error(&bot, &q).await.unwrap();
     }
@@ -32,6 +31,7 @@ pub async fn filter_callback_commands(
             CallbackCommands::Shop => callback_shop(&bot, &q, &data_vec[1..]).boxed(), // args are <type> <name>
             CallbackCommands::StartDuel => {
                 callbak_start_duel(&bot, &q, &data_vec[1..], q.from.id.0, &pool).boxed()
+                // Args are <host-id> <host-mention>
             }
         },
         Err(why) => callback_error(&bot, &q).boxed(),
@@ -45,18 +45,18 @@ pub async fn filter_callback_commands(
     Ok(())
 }
 
-pub async fn callback_error(bot: &Bot, q: &CallbackQuery) -> anyhow::Result<()> {
+async fn callback_error(bot: &Bot, q: &CallbackQuery) -> anyhow::Result<()> {
     bot.answer_callback_query(&q.id)
         .text("Ошибка, неизвестный коллбэк")
         .await?;
     Ok(())
 }
 
-pub async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str]) -> anyhow::Result<()> {
+async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str]) -> anyhow::Result<()> {
     bot.answer_callback_query(&q.id)
         .text(format!("Покупка была успешно совершена!"))
         .await?;
-
+    // Todo finish you know
     // bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "cock")
     //     .text("fuckme")
     //     .reply_markup(make_shop())
@@ -65,7 +65,7 @@ pub async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str]) -> anyho
     Ok(())
 }
 
-pub async fn callbak_start_duel(
+async fn callbak_start_duel(
     bot: &Bot,
     q: &CallbackQuery,
     data: &[&str],
@@ -84,13 +84,12 @@ pub async fn callbak_start_duel(
 
     let host_id = data[0].trim().parse::<u64>().unwrap();
 
-    if !pigdb::pig_exists(pool, host_id).await || !pigdb::pig_exists(pool, part_id).await {
-        bot.edit_message_text_inline(
-            q.inline_message_id.as_ref().unwrap(),
-            "Ошибка при дуэли. Отмена. У кого-то из дуэлянтов нет свиней. How?",
-        )
-        .send()
-        .await?;
+    if !pigdb::pig_exists(pool, part_id).await {
+        bot.answer_callback_query(&q.id)
+            .text("У тебя нет свиньи! Подуэлиться не получиться.\nИспользуй бота, чтобы она создалась автоматически")
+            .send()
+            .await?;
+
         return Ok(());
     }
 
