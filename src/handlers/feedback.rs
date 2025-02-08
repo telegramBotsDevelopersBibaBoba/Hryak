@@ -43,7 +43,6 @@ async fn feedback_rename_hryak(
     if args.is_empty() {
         return Err(anyhow!("Rename hryak args are emtpy"));
     }
-
     pigdb::set_pig_name(pool, &args[0], q.from.id.0).await?;
     Ok(())
 }
