@@ -1,5 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
+use anyhow::anyhow;
 use futures::FutureExt;
 
 use sqlx::MySqlPool;
@@ -77,7 +78,9 @@ async fn callbak_start_duel(
 ) -> anyhow::Result<()> {
     if data.is_empty() {
         bot.edit_message_text_inline(
-            q.inline_message_id.as_ref().unwrap(),
+            q.inline_message_id
+                .as_ref()
+                .ok_or(anyhow!("No data in start duel"))?,
             "Ошибка при дуэли. Отмена",
         )
         .send()
@@ -125,15 +128,18 @@ async fn callbak_start_duel(
 
     sleep(Duration::from_secs(1)).await;
 
-    bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "Битва началась...")
-        .send()
-        .await?;
+    bot.edit_message_text_inline(
+        q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?,
+        "Битва началась...",
+    )
+    .send()
+    .await?;
 
     if pig_first.duel(&pig_second) {
         proccess_duel_results(pool, &pig_first, &pig_second, host_id, part_id).await?;
         // Host won Setup result message
         let msg = format!("Победителем оказался: {}", data[1]);
-        bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
+        bot.edit_message_text_inline(q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?, msg)
             .send()
             .await?;
 
@@ -146,7 +152,7 @@ async fn callbak_start_duel(
 
         // Setup result message
         let msg = format!("Победителем оказался: {}", q.from.mention().unwrap());
-        bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
+        bot.edit_message_text_inline(q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?, msg)
             .send()
             .await?;
         bot.answer_callback_query(&q.id)

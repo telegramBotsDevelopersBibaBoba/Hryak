@@ -7,6 +7,10 @@ use crate::handlers::articles;
 use futures::FutureExt;
 use sqlx::MySqlPool;
 use teloxide::payloads::AnswerInlineQuerySetters;
+use teloxide::prelude::Request;
+use teloxide::types::InlineQueryResultArticle;
+use teloxide::types::InputMessageContent;
+use teloxide::types::InputMessageContentText;
 use teloxide::{
     prelude::Requester,
     types::{InlineQuery, InlineQueryResult},
@@ -19,8 +23,19 @@ pub async fn filter_inline_commands(
 ) -> Result<(), RequestError> {
     // Called always
 
-    let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
+    if q.from.username.as_ref().is_none() {
+        inline_error(
+            bot,
+            &q,
+            "Не найдено имя пользователя. Без него бот работает некорректно",
+            "Имя пользователя можно добавить в настройках аккаунта",
+        )
+        .await
+        .unwrap();
+        return Ok(());
+    }
 
+    let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
     let command_data = &q.query.split_once(" ");
 
     // Storing a function based on what query is that, if empty -> show 'help'
@@ -49,6 +64,30 @@ pub async fn filter_inline_commands(
         println!("{}", why);
     }
 
+    Ok(())
+}
+
+async fn inline_error(
+    bot: Bot,
+    q: &InlineQuery,
+    descr: &str,
+    response: &str,
+) -> anyhow::Result<()> {
+    let error = InlineQueryResultArticle::new(
+        "error_inline".to_string(),
+        "Ошибка!",
+        InputMessageContent::Text(InputMessageContentText::new(response)),
+    )
+    .description(descr)
+    .thumbnail_url(
+        "https://www.shutterstock.com/image-photo/large-hairy-pig-pink-nose-600nw-642075343.jpg"
+            .parse()
+            .unwrap(),
+    );
+
+    let articles = vec![InlineQueryResult::Article(error)];
+
+    bot.answer_inline_query(&q.id, articles).send().await?; // Showing all suitable inline buttons
     Ok(())
 }
 
