@@ -1,20 +1,24 @@
 use std::{str::FromStr, time::Duration};
 
+use sqlx::MySqlPool;
+use teloxide::utils::command::BotCommands;
 use teloxide::{
-    payloads::EditMessageText,
+    filter_command,
     prelude::*,
-    sugar::bot::BotMessagesExt,
-    types::{
-        InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
-        ParseMode,
-    },
-    RequestError,
+    types::MessageEntityKind,
+    utils::command::{self},
 };
 
 mod config;
 mod controllers;
 mod db;
 mod handlers;
+
+#[derive(BotCommands, Clone)]
+enum Com {
+    #[command(alias = "user")]
+    UserId,
+}
 
 #[tokio::main]
 async fn main() {
@@ -44,7 +48,6 @@ async fn main() {
             Update::filter_chosen_inline_result()
                 .endpoint(handlers::feedback::filter_inline_chosen_command),
         );
-
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![pool])
         .enable_ctrlc_handler()

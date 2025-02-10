@@ -1,10 +1,10 @@
 use std::{str::FromStr, time::Duration};
 
 use futures::FutureExt;
-use rand::Rng;
+
 use sqlx::MySqlPool;
 use teloxide::{
-    payloads::{AnswerCallbackQuerySetters, EditMessageTextInlineSetters},
+    payloads::AnswerCallbackQuerySetters,
     prelude::{Request, Requester},
     types::CallbackQuery,
     Bot, RequestError,

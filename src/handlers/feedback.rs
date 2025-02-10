@@ -24,7 +24,7 @@ pub async fn filter_inline_chosen_command(
                 feedback_rename_hryak(bot, &q, &args[1..], &pool).boxed() // args are <new_name>
             }
         },
-        Err(why) => return Ok(()), // If it's not any command it's just better to skip it (return Ok) since it may have not been intended to come here
+        Err(_) => return Ok(()), // If it's not any command it's just better to skip it (return Ok) since it may have not been intended to come here
     };
 
     let resp = function.await;

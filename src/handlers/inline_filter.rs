@@ -1,27 +1,17 @@
-use std::{str::FromStr, time::Duration};
+use std::str::FromStr;
 
 use crate::config::commands::InlineAdvCommands;
+use crate::config::commands::InlineCommands;
 use crate::db::pigdb;
 use crate::handlers::articles;
-use crate::{
-    config::commands::InlineCommands,
-    db::{pigdb::get_pig_weight, userdb},
-};
-use anyhow::anyhow;
 use futures::FutureExt;
 use sqlx::MySqlPool;
 use teloxide::payloads::AnswerInlineQuerySetters;
 use teloxide::{
-    prelude::{Request, Requester},
-    respond,
-    types::{
-        InlineKeyboardButton, InlineKeyboardMarkup, InlineQuery, InlineQueryResult,
-        InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
-    },
+    prelude::Requester,
+    types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
-use tokio::time::sleep;
-
 pub async fn filter_inline_commands(
     bot: Bot,
     q: InlineQuery,
@@ -76,8 +66,7 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
         InlineQueryResult::Article(help),
     ];
 
-    let response = bot
-        .answer_inline_query(&q.id, articles)
+    bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?; // Showing all suitable inline buttons
     Ok(())
@@ -88,8 +77,7 @@ async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyho
 
     let articles = vec![InlineQueryResult::Article(hryak)];
 
-    let response = bot
-        .answer_inline_query(&q.id, articles)
+    bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?; // Showing all suitable inline buttons
     Ok(())
@@ -100,8 +88,7 @@ async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Res
 
     let articles = vec![InlineQueryResult::Article(shop)];
 
-    let response = bot
-        .answer_inline_query(&q.id, articles)
+    bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?;
     Ok(())
@@ -112,8 +99,7 @@ async fn inline_name(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
 
     let articles = vec![InlineQueryResult::Article(name)];
 
-    let response = bot
-        .answer_inline_query(&q.id, articles)
+    bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?;
     Ok(())
@@ -123,8 +109,7 @@ async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow::Re
     let changename = articles::inline_change_name_article(data);
 
     let articles = vec![InlineQueryResult::Article(changename)];
-    let response = bot
-        .answer_inline_query(&q.id, articles)
+    bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?;
     Ok(())
@@ -143,8 +128,7 @@ async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Res
 
     let articles = vec![InlineQueryResult::Article(duel)];
 
-    let response = bot
-        .answer_inline_query(&q.id, articles)
+    bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?;
     Ok(())

@@ -1,11 +1,11 @@
-use sqlx::MySqlPool;
-
 use crate::db::pigdb;
+use sqlx::MySqlPool;
+use sqlx::Row;
 
-pub async fn create_user(pool: &MySqlPool, user_id: u64, display_name: &str) -> anyhow::Result<()> {
-    sqlx::query("INSERT INTO users (id, display_name) VALUES (?, ?)")
+pub async fn create_user(pool: &MySqlPool, user_id: u64, username: &str) -> anyhow::Result<()> {
+    sqlx::query("INSERT INTO users (id, username) VALUES (?, ?)")
         .bind(user_id)
-        .bind(display_name)
+        .bind(username)
         .execute(pool)
         .await?;
 
@@ -19,8 +19,27 @@ pub async fn user_exists(pool: &MySqlPool, user_id: u64) -> bool {
         .bind(user_id)
         .fetch_one(pool)
         .await
-    { // If the query fails => nothing found
+    {
+        // If the query fails => nothing found
         Ok(_) => true,
         Err(_) => false,
     }
+}
+
+pub async fn username_by_id(pool: &MySqlPool, user_id: u64) -> anyhow::Result<String> {
+    let row = sqlx::query("SELECT username FROM users WHERE id = ?")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
+    let username = row.try_get::<String, _>(0)?;
+    Ok(username)
+}
+
+pub async fn set_username(pool: &MySqlPool, username: &str, user_id: u64) -> anyhow::Result<()> {
+    sqlx::query("UPDATE users SET username = ? WHERE id = ?")
+        .bind(username)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
 }

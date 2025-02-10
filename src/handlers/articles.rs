@@ -1,12 +1,11 @@
 use anyhow::anyhow;
 use sqlx::MySqlPool;
 use teloxide::types::{
-    InlineKeyboardButton, InlineKeyboardMarkup, InlineQuery, InlineQueryResultArticle,
-    InputMessageContent, InputMessageContentText,
+    InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
 };
 
 use crate::db::pigdb::get_pig_by_user_id;
-use crate::db::{pigdb::get_pig_weight, userdb};
+use crate::db::userdb;
 use crate::handlers::keyboard;
 
 use super::keyboard::make_duel;
@@ -16,10 +15,13 @@ pub async fn inline_hryak_info_article(
     pool: &MySqlPool,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let pig = match get_pig_by_user_id(pool, q.from.id.0).await {
-        Ok(mass) => mass,
+        Ok(mass) => {
+            userdb::set_username(pool, &q.from.username.as_ref().unwrap(), q.from.id.0).await?;
+            mass
+        }
         Err(why) => {
             eprintln!("{}", why);
-            userdb::create_user(pool, q.from.id.0, &q.from.first_name).await?;
+            userdb::create_user(pool, q.from.id.0, &q.from.username.as_ref().unwrap()).await?;
 
             let hrundel_weight = InlineQueryResultArticle::new(
                 "hryak".to_string(),
@@ -149,6 +151,4 @@ pub fn inline_no_pig_article() -> InlineQueryResultArticle {
         InputMessageContent::Text(InputMessageContentText::new(message)),
     )
     .description("You don't have a pig yet!")
-    // Optionally, you can add a thumbnail URL if desired:
-    // .thumbnail_url("https://example.com/path/to/thumbnail.jpg".parse().unwrap())
 }
