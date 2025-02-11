@@ -1,8 +1,12 @@
 use sqlx::{
     mysql::MySqlRow,
     types::chrono::{DateTime, Utc},
-    Row,
+    MySqlPool, Row,
 };
+use teloxide::{prelude::ResponseResult, types::Message, Bot};
+
+use crate::{config::commands::EconomyCommands, db::economydb};
+use crate::{config::utils, db::userdb};
 
 pub struct BankAccount {
     balance: f64,
@@ -23,4 +27,64 @@ impl BankAccount {
             income_time,
         })
     }
+}
+
+pub async fn economy_handle(
+    bot: Bot,
+    msg: Message,
+    cmd: EconomyCommands,
+    pool: MySqlPool,
+) -> ResponseResult<()> {
+    match cmd {
+        EconomyCommands::DailyIncome => {
+            let (daily_multiplier, last_income) =
+                economydb::get_daily_income(&pool, msg.from.as_ref().unwrap().id.0)
+                    .await
+                    .unwrap();
+            let income_total = daily_multiplier * economydb::BASE_INCOME;
+
+            if let Err(why) =
+                economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await
+            {
+                let message = format!(
+                    "<a href=\"tg://user?id={}\">{}</a>, рано! Подождите еще {} часов.",
+                    msg.from.as_ref().unwrap().id.0,
+                    msg.from.as_ref().unwrap().first_name,
+                    24 - (Utc::now() - last_income.unwrap()).num_hours()
+                );
+                utils::send_msg(&bot, &msg, &message).await?;
+                return Ok(());
+            }
+
+            let message = format!(
+                "Вы получили ежедневный доход в размере {:.2}$",
+                income_total
+            );
+            utils::send_msg(&bot, &msg, &message).await?;
+        }
+        EconomyCommands::Pay { mention, amount } => {
+            let mention: String = mention.chars().skip(1).collect();
+            println!("Args: {} {}", mention, amount);
+            let balance_host = economydb::get_balance(&pool, msg.from.as_ref().unwrap().id.0)
+                .await
+                .unwrap();
+            if balance_host < amount {
+                todo!("Send error message not enogu money");
+            }
+
+            let receiver_id = userdb::id_by_username(&pool, &mention).await.unwrap() as u64; // TODO: Error user doesnt exist
+            let balance_receiver = economydb::get_balance(&pool, receiver_id).await.unwrap();
+
+            economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount)
+                .await
+                .unwrap(); // Shall not fail cuz of the check before
+            economydb::add_money(&pool, receiver_id, amount)
+                .await
+                .unwrap(); // Shall not fail because why would it fail
+
+            utils::send_msg(&bot, &msg, &format!("Вы успешно перевели {}$", amount)).await?;
+            return Ok(());
+        }
+    }
+    Ok(())
 }

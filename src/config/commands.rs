@@ -1,5 +1,5 @@
 use strum::{Display, EnumString};
-use teloxide::utils::command::BotCommands;
+use teloxide::utils::command::{self, BotCommands};
 #[derive(Display, EnumString)]
 pub enum InlineCommands {
     // Single-word commands
@@ -37,4 +37,10 @@ pub enum FeedbackCommands {
 }
 
 #[derive(BotCommands, Clone)]
-pub enum EconomyCommands {}
+pub enum EconomyCommands {
+    #[command(aliases = ["income", "daily"], description = "Получить ежедневную денежную помощь от США")]
+    DailyIncome,
+
+    #[command(parse_with = "split", aliases = ["pay"], description = "Перевести деньги кому-нибудь")]
+    Pay { mention: String, amount: f64 },
+}

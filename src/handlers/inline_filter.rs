@@ -96,13 +96,15 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
     let hryak = articles::inline_hryak_info_article(q, pool).await?;
     let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
     let help = articles::inline_help_article(q, pool);
-    let test_shop = articles::inline_shop_article(q, pool);
+    let shop = articles::inline_shop_article(q, pool);
+    let balance = articles::inline_balance_article(pool, q.from.id.0).await?;
 
     // Showing several articles at once
     let articles = vec![
         InlineQueryResult::Article(hryak),
         InlineQueryResult::Article(duel),
-        InlineQueryResult::Article(test_shop),
+        InlineQueryResult::Article(balance),
+        InlineQueryResult::Article(shop),
         InlineQueryResult::Article(help),
     ];
 

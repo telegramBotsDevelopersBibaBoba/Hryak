@@ -1,6 +1,8 @@
 use std::{str::FromStr, time::Duration};
 
+use config::commands;
 use sqlx::MySqlPool;
+use teloxide::dispatching::HandlerExt;
 use teloxide::utils::command::BotCommands;
 use teloxide::{
     filter_command,
@@ -47,6 +49,11 @@ async fn main() {
         .branch(
             Update::filter_chosen_inline_result()
                 .endpoint(handlers::feedback::filter_inline_chosen_command),
+        )
+        .branch(
+            Update::filter_message()
+                .filter_command::<commands::EconomyCommands>()
+                .endpoint(controllers::economy::economy_handle),
         );
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![pool])
