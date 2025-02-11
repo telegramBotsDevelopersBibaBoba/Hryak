@@ -52,6 +52,7 @@ pub async fn filter_inline_commands(
                 InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
                 InlineCommands::Name => inline_name(bot, &q).boxed(),
                 InlineCommands::Duel => inline_duel(bot, &q, &pool).boxed(),
+                InlineCommands::Balance => inline_balance(bot, &q, &pool).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -166,6 +167,17 @@ async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Res
     let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
 
     let articles = vec![InlineQueryResult::Article(duel)];
+
+    bot.answer_inline_query(&q.id, articles)
+        .cache_time(0)
+        .await?;
+    Ok(())
+}
+
+async fn inline_balance(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+    let balance_article = articles::inline_balance_article(pool, q.from.id.0).await?;
+
+    let articles = vec![InlineQueryResult::Article(balance_article)];
 
     bot.answer_inline_query(&q.id, articles)
         .cache_time(0)

@@ -1,5 +1,5 @@
 use strum::{Display, EnumString};
-
+use teloxide::utils::command::BotCommands;
 #[derive(Display, EnumString)]
 pub enum InlineCommands {
     // Single-word commands
@@ -11,6 +11,8 @@ pub enum InlineCommands {
     Name,
     #[strum(serialize = "duel", serialize = "дуэль")]
     Duel,
+    #[strum(serialize = "баланс", serialize = "balance")]
+    Balance,
 }
 
 #[derive(Display, EnumString)]
@@ -33,3 +35,6 @@ pub enum FeedbackCommands {
     #[strum(serialize = "имя", serialize = "name")]
     ChangeName,
 }
+
+#[derive(BotCommands, Clone)]
+pub enum EconomyCommands {}
