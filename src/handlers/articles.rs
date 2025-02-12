@@ -5,7 +5,7 @@ use teloxide::types::{
 };
 
 use crate::db::pigdb::get_pig_by_user_id;
-use crate::db::userdb;
+use crate::db::{economydb, userdb};
 use crate::handlers::keyboard;
 
 use super::keyboard::make_duel;
@@ -161,4 +161,26 @@ pub fn inline_no_pig_article() -> InlineQueryResultArticle {
         InputMessageContent::Text(InputMessageContentText::new(message)),
     )
     .description("You don't have a pig yet!")
+}
+pub async fn inline_balance_article(
+    pool: &MySqlPool,
+    user_id: u64,
+) -> anyhow::Result<InlineQueryResultArticle> {
+    let balance = economydb::get_balance(pool, user_id).await?;
+
+    let message = format!("Ваш баланс: {}$\nХохлы пидоры", balance);
+
+    let balance_article = InlineQueryResultArticle::new(
+        "balance",
+        "Ваш баланс",
+        InputMessageContent::Text(InputMessageContentText::new(message)),
+    )
+    .description("Нажмите сюда, чтобы увидеть ваш баланс")
+    .thumbnail_url(
+        "https://ih1.redbubble.net/image.5250551209.9937/flat,750x,075,f-pad,750x1000,f8f8f8.webp"
+            .parse()
+            .unwrap(),
+    );
+
+    Ok(balance_article)
 }

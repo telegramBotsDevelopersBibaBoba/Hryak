@@ -2,6 +2,8 @@ use crate::db::pigdb;
 use sqlx::MySqlPool;
 use sqlx::Row;
 
+use super::economydb;
+
 pub async fn create_user(pool: &MySqlPool, user_id: u64, username: &str) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO users (id, username) VALUES (?, ?)")
         .bind(user_id)
@@ -10,7 +12,7 @@ pub async fn create_user(pool: &MySqlPool, user_id: u64, username: &str) -> anyh
         .await?;
 
     pigdb::create_pig(pool, user_id).await?;
-
+    economydb::create_bank_account(pool, user_id).await?;
     Ok(())
 }
 
@@ -42,4 +44,14 @@ pub async fn set_username(pool: &MySqlPool, username: &str, user_id: u64) -> any
         .execute(pool)
         .await?;
     Ok(())
+}
+
+pub async fn id_by_username(pool: &MySqlPool, username: &str) -> anyhow::Result<i64> {
+    let row = sqlx::query("SELECT id FROM users WHERE username = ?")
+        .bind(username)
+        .fetch_one(pool)
+        .await?;
+
+    let id = row.try_get::<i64, _>(0)?;
+    Ok(id)
 }
