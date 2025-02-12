@@ -68,6 +68,7 @@ impl Display for ImprovementOffer {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum OfferType {
     Improvement,
     Food,
@@ -92,8 +93,12 @@ impl Offer {
 
     pub fn get_info(&self, index: usize) -> String {
         match self {
-            Self::Food(item) => format!("{}) {}", index, item),
-            Self::Improvement(item) => format!("{}) {}", index, item),
+            Self::Food(item) => format!("{}) {}\n", index, item),
+            Self::Improvement(item) => format!("{}) {}\n", index, item),
         }
     }
+}
+
+pub fn get_daily_offers() -> [u64; 5] {
+    todo!()
 }
