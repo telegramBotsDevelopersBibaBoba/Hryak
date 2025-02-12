@@ -13,7 +13,9 @@ use teloxide::{
 use tokio::time::sleep;
 
 use crate::{
-    config::commands::CallbackCommands, controllers::pig::proccess_duel_results, db::pigdb,
+    config::commands::CallbackCommands,
+    controllers::pig::proccess_duel_results,
+    db::{economydb, pigdb},
     deser_command,
 };
 
@@ -35,7 +37,7 @@ pub async fn filter_callback_commands(
             CallbackCommands::Shop => callback_shop(&bot, &q, &data_vec[1..]).boxed(), // args are <type> <name>
             CallbackCommands::StartDuel => {
                 callbak_start_duel(&bot, &q, &data_vec[1..], q.from.id.0, &pool).boxed()
-                // Args are <host-id> <host-mention>
+                // Args are <host-id> <host-mention> <bid>
             }
         },
         Err(why) => callback_error(&bot, &q).boxed(),
@@ -107,6 +109,16 @@ async fn callbak_start_duel(
         return Ok(());
     }
 
+    let bid = data[2].trim().parse::<f64>().unwrap_or(1.0);
+    let part_balance = economydb::get_balance(pool, part_id).await?;
+    if part_balance < bid {
+        bot.answer_callback_query(&q.id)
+            .text("Недостаточно денег!")
+            .send()
+            .await?;
+        return Ok(());
+    }
+
     bot.edit_message_text_inline(
         q.inline_message_id.as_ref().unwrap(),
         "Готовимся к дуэли...",
@@ -137,7 +149,7 @@ async fn callbak_start_duel(
 
     if pig_first.duel(&pig_second) {
         proccess_duel_results(pool, &pig_first, &pig_second, host_id, part_id).await?;
-        // Host won Setup result message
+
         let msg = format!("Победителем оказался: {}", data[1]);
         bot.edit_message_text_inline(q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?, msg)
             .send()
@@ -150,7 +162,6 @@ async fn callbak_start_duel(
     } else {
         proccess_duel_results(pool, &pig_second, &pig_first, part_id, host_id).await?;
 
-        // Setup result message
         let msg = format!("Победителем оказался: {}", q.from.mention().unwrap());
         bot.edit_message_text_inline(q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?, msg)
             .send()

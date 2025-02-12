@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::config::commands::InlineAdvCommands;
 use crate::config::commands::InlineCommands;
+use crate::db::economydb;
 use crate::db::pigdb;
 use crate::handlers::articles;
 use futures::FutureExt;
@@ -43,6 +44,7 @@ pub async fn filter_inline_commands(
         Some((command_str, data)) => match InlineAdvCommands::from_str(command_str) {
             Ok(command) => match command {
                 InlineAdvCommands::ChangeName => inline_change_name(bot, &q, data).boxed(),
+                InlineAdvCommands::Duel => inline_duel_bid(bot, &q, &pool, data).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -94,8 +96,9 @@ async fn inline_error(
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_info_article(q, pool).await?;
-    let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
-    let help = articles::inline_help_article(q, pool);
+    let duel =
+        articles::inline_duel_article(pool, q.from.id.0, q.from.mention().unwrap(), 1.0).await?;
+    let help = articles::inline_help_article();
     let shop = articles::inline_shop_article(q, pool);
     let balance = articles::inline_balance_article(pool, q.from.id.0).await?;
 
@@ -166,8 +169,35 @@ async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Res
             .await?;
         return Ok(());
     }
-    let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
 
+    let duel =
+        articles::inline_duel_article(&pool, q.from.id.0, q.from.mention().unwrap(), 1.0).await?;
+    let articles = vec![InlineQueryResult::Article(duel)];
+
+    bot.answer_inline_query(&q.id, articles)
+        .cache_time(0)
+        .await?;
+    Ok(())
+}
+async fn inline_duel_bid(
+    bot: Bot,
+    q: &InlineQuery,
+    pool: &MySqlPool,
+    data: &str,
+) -> anyhow::Result<()> {
+    if !pigdb::pig_exists(pool, q.from.id.0).await {
+        let no_pig = articles::inline_no_pig_article();
+        let articles = vec![InlineQueryResult::Article(no_pig)];
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
+        return Ok(());
+    }
+
+    let bid = data.trim().parse::<f64>().unwrap_or(10.0);
+
+    let duel =
+        articles::inline_duel_article(&pool, q.from.id.0, q.from.mention().unwrap(), bid).await?;
     let articles = vec![InlineQueryResult::Article(duel)];
 
     bot.answer_inline_query(&q.id, articles)

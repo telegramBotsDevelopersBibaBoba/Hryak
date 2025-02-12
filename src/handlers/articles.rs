@@ -59,7 +59,7 @@ pub async fn inline_hryak_info_article(
 
     Ok(hrundel_weight)
 }
-pub fn inline_help_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResultArticle {
+pub fn inline_help_article() -> InlineQueryResultArticle {
     let help = InlineQueryResultArticle::new(
         "help".to_string(),
         "Узнать все доступные команды".to_string(),
@@ -132,25 +132,44 @@ pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
     name
 }
 
-pub fn inline_duel_article(
+pub async fn inline_duel_article(
+    pool: &MySqlPool,
     duel_host_id: u64,
     duel_host_mention: String,
-) -> InlineQueryResultArticle {
+    bid: f64,
+) -> anyhow::Result<InlineQueryResultArticle> {
+    let user_balance = economydb::get_balance(pool, duel_host_id).await?;
+    if user_balance < bid {
+        let message = "Недостаточно денег для создания дуэли!";
+        let n_money = InlineQueryResultArticle::new(
+            "not_enough_money",
+            "Ошибка",
+            InputMessageContent::Text(InputMessageContentText::new(message)),
+        )
+        .description("Недостаточно денег для создания дуэли!")
+        .thumbnail_url(
+            "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig"
+                .parse()
+                .unwrap(),
+        );
+        return Ok(n_money);
+    }
+
     let name = InlineQueryResultArticle::new(
         "duel",
         "Нажмите, чтобы выслать приглашение на дуэль",
         InputMessageContent::Text(InputMessageContentText::new(
-            format!("Нажмите на кнопку, чтобы начать дуэль!")
+            format!("Нажмите на кнопку, чтобы начать дуэль!\nСтавка {}$", bid)
         )),
     )
-    .description("Свинодуэль")
+    .description(format!("Свинодуэль. Ставка {}$", bid))
     .thumbnail_url(
         "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig"
             .parse()
             .unwrap(),
     )
-    .reply_markup(make_duel(duel_host_id, duel_host_mention));
-    name
+    .reply_markup(make_duel(duel_host_id, duel_host_mention, bid));
+    Ok(name)
 }
 
 pub fn inline_no_pig_article() -> InlineQueryResultArticle {

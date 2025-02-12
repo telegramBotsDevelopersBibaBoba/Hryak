@@ -26,7 +26,7 @@ pub fn make_shop() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new([buttons])
 }
 
-pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String) -> InlineKeyboardMarkup {
+pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String, bid: f64) -> InlineKeyboardMarkup {
     let buttons = vec![
         // Perhaps  should store duel sender id
         InlineKeyboardButton::callback(
@@ -34,7 +34,8 @@ pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String) -> InlineKeyboa
             ser_command!(
                 "duel",
                 &duel_maker_id.to_string(),
-                &duel_maker_mention.to_string()
+                &duel_maker_mention.to_string(),
+                &bid.to_string()
             ),
         ),
     ];

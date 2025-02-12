@@ -20,6 +20,8 @@ pub enum InlineAdvCommands {
     // Commands with arguments
     #[strum(serialize = "имя", serialize = "name")]
     ChangeName,
+    #[strum(serialize = "duel", serialize = "дуэль")]
+    Duel,
 }
 
 #[derive(Display, EnumString)]
