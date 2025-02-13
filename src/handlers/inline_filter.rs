@@ -93,7 +93,7 @@ async fn inline_error(
 }
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let hryak = articles::inline_hryak_info_article(q, pool).await?;
+    let hryak = articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
     let duel =
         articles::inline_duel_article(pool, q.from.id.0, q.from.mention().unwrap(), 1.0).await?;
     let help = articles::inline_help_article();
@@ -116,7 +116,7 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
 }
 
 async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let hryak = articles::inline_hryak_info_article(q, pool).await?;
+    let hryak = articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
 
     let articles = vec![InlineQueryResult::Article(hryak)];
 

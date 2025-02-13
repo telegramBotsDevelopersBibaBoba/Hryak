@@ -32,8 +32,8 @@ impl Pig {
         let power_first = self.attack + mass_weight * self.weight;
         let power_second = other_pig.attack + mass_weight * other_pig.weight;
 
-        let final_first = power_first * rand::rng().random_range(0.5..=1.1);
-        let final_second = power_second * rand::rng().random_range(0.5..=1.1);
+        let final_first = power_first * rand::rng().random_range(0.6..=1.1);
+        let final_second = power_second * rand::rng().random_range(0.6..=1.1);
         println!("Host: {}\nPart: {}", final_first, final_second);
         final_first > final_second
     }

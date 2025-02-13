@@ -10,15 +10,16 @@ use crate::handlers::keyboard;
 use super::keyboard::make_duel;
 
 pub async fn inline_hryak_info_article(
-    q: &InlineQuery,
     pool: &MySqlPool,
+    username: &Option<String>,
+    user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
-    let pig = match get_pig_by_user_id(pool, q.from.id.0).await {
+    let pig = match get_pig_by_user_id(pool, user_id).await {
         Ok(mass) => {
             userdb::set_username(
                 pool,
-                &q.from.username.as_ref().unwrap_or(&"None".to_string()),
-                q.from.id.0,
+                username.as_ref().unwrap_or(&"None".to_string()),
+                user_id,
             )
             .await?;
             mass
@@ -27,8 +28,8 @@ pub async fn inline_hryak_info_article(
             eprintln!("{}", why);
             userdb::create_user(
                 pool,
-                q.from.id.0,
-                &q.from.username.as_ref().unwrap_or(&"None".to_string()),
+                user_id,
+                username.as_ref().unwrap_or(&"None".to_string()),
             )
             .await?;
 
