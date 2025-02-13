@@ -8,6 +8,8 @@ pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
         InlineKeyboardButton::switch_inline_query_current_chat("Открыть магазин", "магазин");
     let button3 =
         InlineKeyboardButton::switch_inline_query_current_chat("Сменить имя хряка", "имя");
+    let button3 =
+        InlineKeyboardButton::switch_inline_query_current_chat("Своя ставка в дуэли", "дуэль 999");
     // todo more
 
     InlineKeyboardMarkup::new([[button, button2, button3]])

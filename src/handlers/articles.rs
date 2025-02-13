@@ -53,7 +53,7 @@ pub async fn inline_hryak_info_article(
 pub fn inline_help_article() -> InlineQueryResultArticle {
     let help = InlineQueryResultArticle::new(
         "help".to_string(),
-        "Команды".to_string(),
+        "Помощь".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(
             "Вот список доступных комманд:",
         )),
@@ -131,7 +131,7 @@ pub async fn inline_duel_article(
 
     let name = InlineQueryResultArticle::new(
         "duel",
-        "Нажмите, чтобы выслать приглашение на дуэль",
+        "Дуэль",
         InputMessageContent::Text(InputMessageContentText::new(
             format!("Нажмите на кнопку, чтобы начать дуэль!\nСтавка {}$", bid)
         )),
