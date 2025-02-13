@@ -8,14 +8,12 @@ use futures::FutureExt;
 use sqlx::MySqlPool;
 use teloxide::payloads::AnswerInlineQuerySetters;
 use teloxide::prelude::Request;
-use teloxide::types::InlineQueryResultArticle;
-use teloxide::types::InputMessageContent;
-use teloxide::types::InputMessageContentText;
 use teloxide::{
     prelude::Requester,
     types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
+
 pub async fn filter_inline_commands(
     bot: Bot,
     q: InlineQuery,
@@ -43,6 +41,10 @@ pub async fn filter_inline_commands(
         Some((command_str, data)) => match InlineAdvCommands::from_str(command_str) {
             Ok(command) => match command {
                 InlineAdvCommands::ChangeName => inline_change_name(bot, &q, data).boxed(),
+                InlineAdvCommands::Duel => {
+                    let bid = data.trim().parse::<f64>().unwrap_or(1.0);
+                    inline_duel(bot, &q, &pool, bid).boxed()
+                }
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -51,7 +53,7 @@ pub async fn filter_inline_commands(
                 InlineCommands::Hryak => inline_hryak_info(bot, &q, &pool).boxed(),
                 InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
                 InlineCommands::Name => inline_name(bot, &q).boxed(),
-                InlineCommands::Duel => inline_duel(bot, &q, &pool).boxed(),
+                InlineCommands::Duel => inline_duel(bot, &q, &pool, 1.0).boxed(),
                 InlineCommands::Balance => inline_balance(bot, &q, &pool).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
@@ -74,16 +76,14 @@ async fn inline_error(
     descr: &str,
     response: &str,
 ) -> anyhow::Result<()> {
-    let error = InlineQueryResultArticle::new(
-        "error_inline".to_string(),
+    let error = articles::make_article(
+        "error_some",
         "Ошибка!",
-        InputMessageContent::Text(InputMessageContentText::new(response)),
-    )
-    .description(descr)
-    .thumbnail_url(
-        "https://www.shutterstock.com/image-photo/large-hairy-pig-pink-nose-600nw-642075343.jpg"
-            .parse()
-            .unwrap(),
+        response,
+        response,
+        Some(
+            "https://cdn4.vectorstock.com/i/1000x1000/94/33/scared-pig-running-vector-22489433.jpg",
+        ),
     );
 
     let articles = vec![InlineQueryResult::Article(error)];
@@ -94,9 +94,10 @@ async fn inline_error(
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_info_article(q, pool).await?;
-    let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
-    let help = articles::inline_help_article(q, pool);
-    let shop = articles::inline_shop_article(q, pool);
+    let duel =
+        articles::inline_duel_article(pool, q.from.id.0, q.from.mention().unwrap(), 1.0).await?;
+    let help = articles::inline_help_article();
+    let shop = articles::inline_shop_article();
     let balance = articles::inline_balance_article(pool, q.from.id.0).await?;
 
     // Showing several articles at once
@@ -126,7 +127,7 @@ async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyho
 }
 
 async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let shop = articles::inline_shop_article(q, pool);
+    let shop = articles::inline_shop_article();
 
     let articles = vec![InlineQueryResult::Article(shop)];
 
@@ -157,17 +158,22 @@ async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow::Re
     Ok(())
 }
 
-async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool, bid: f64) -> anyhow::Result<()> {
     if !pigdb::pig_exists(pool, q.from.id.0).await {
-        let no_pig = articles::inline_no_pig_article();
+        let no_pig = articles::make_article("no_pig",
+            "Ошибка!",
+            "Вы не можете начать дуэль без собственной свиньи!\nЧтобы создать ее введите команду hryak", "Вы не можете начать дуэль без собственной свиньи!\nЧтобы создать ее введите команду hryak",
+            "https://www.goodheartanimalsanctuaries.com/wp-content/uploads/2020/05/PigForaging.jpg".into());
+
         let articles = vec![InlineQueryResult::Article(no_pig)];
         bot.answer_inline_query(&q.id, articles)
             .cache_time(0)
             .await?;
         return Ok(());
     }
-    let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
 
+    let duel =
+        articles::inline_duel_article(&pool, q.from.id.0, q.from.mention().unwrap(), bid).await?;
     let articles = vec![InlineQueryResult::Article(duel)];
 
     bot.answer_inline_query(&q.id, articles)

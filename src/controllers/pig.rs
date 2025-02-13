@@ -1,7 +1,7 @@
 use rand::Rng;
 use sqlx::{mysql::MySqlRow, MySqlPool, Row};
 
-use crate::db::pigdb;
+use crate::db::{economydb, pigdb};
 
 pub struct Pig {
     id: i64,
@@ -32,31 +32,20 @@ impl Pig {
         let power_first = self.attack + mass_weight * self.weight;
         let power_second = other_pig.attack + mass_weight * other_pig.weight;
 
-        let final_first = power_first * rand::rng().random_range(0.9..=1.1);
-        let final_second = power_second * rand::rng().random_range(0.9..=1.1);
-
+        let final_first = power_first * rand::rng().random_range(0.5..=1.1);
+        let final_second = power_second * rand::rng().random_range(0.5..=1.1);
+        println!("Host: {}\nPart: {}", final_first, final_second);
         final_first > final_second
     }
 }
 
 pub async fn proccess_duel_results(
     pool: &MySqlPool,
-    pig_winner: &Pig,
-    pig_loser: &Pig,
     winner_id: u64,
     loser_id: u64,
+    bid: f64,
 ) -> anyhow::Result<()> {
-    let new_weight = pig_winner.weight + pig_loser.weight * 0.1;
-    pigdb::set_pig_weight(pool, new_weight, winner_id).await?;
-
-    let mut new_loser_weight = pig_loser.weight * 0.9;
-    if new_loser_weight < 10.0 {
-        new_loser_weight = 10.0;
-    }
-
-    // TODO: econmy stuff (like take n% amount of money from loser and give it to winner)
-
-    pigdb::set_pig_weight(pool, new_loser_weight, loser_id).await?;
-
+    economydb::add_money(pool, winner_id, bid * 2.0).await?;
+    economydb::sub_money(pool, loser_id, bid).await?;
     Ok(())
 }

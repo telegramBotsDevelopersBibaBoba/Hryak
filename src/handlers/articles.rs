@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use sqlx::MySqlPool;
 use teloxide::types::{
     InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
@@ -33,36 +32,27 @@ pub async fn inline_hryak_info_article(
             )
             .await?;
 
-            let hrundel_weight = InlineQueryResultArticle::new(
-                "hryak".to_string(),
-                "Ваш первый хрюндель был создан".to_string(),
-                InputMessageContent::Text(InputMessageContentText::new(
-                    format!("Введите команду еще раз")
-                )),
-            )
-            .description("Для корректного отображения введите команду еще раз")
-            .thumbnail_url("https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".parse().unwrap());
+            let hrundel_weight = make_article("hryak",
+                "Ваш первый хрюндель был создан",
+                "Введите команду еще раз",
+                "Для корректного отображения введите команду еще раз",
+                "https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".into());
 
             return Ok(hrundel_weight);
         }
     };
 
-    let hrundel_weight = InlineQueryResultArticle::new(
-        "hryak".to_string(),
-        "Узнать инфу о хряке".to_string(),
-        InputMessageContent::Text(InputMessageContentText::new(
-            format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight)
-        )),
-    )
-    .description("Hryak")
-    .thumbnail_url("https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".parse().unwrap());
+    let hrundel_weight = make_article("hryak", "Узнать инфу о хряке",
+        &format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight),
+        "Посмотрите подробную информацию о вашей свинке",
+        "https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".into());
 
     Ok(hrundel_weight)
 }
-pub fn inline_help_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResultArticle {
+pub fn inline_help_article() -> InlineQueryResultArticle {
     let help = InlineQueryResultArticle::new(
         "help".to_string(),
-        "Узнать все доступные команды".to_string(),
+        "Команды".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(
             "Вот список доступных комманд:",
         )),
@@ -77,7 +67,7 @@ pub fn inline_help_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResu
     help
 }
 
-pub fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResultArticle {
+pub fn inline_shop_article() -> InlineQueryResultArticle {
     let shop = InlineQueryResultArticle::new(
         "shop".to_string(),
         "Закупки".to_string(),
@@ -94,20 +84,14 @@ pub fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResu
 }
 
 pub fn inline_name_article() -> InlineQueryResultArticle {
-    let name = InlineQueryResultArticle::new(
+    make_article(
         "name",
         "Поменять имя у хряка",
-        InputMessageContent::Text(InputMessageContentText::new(
-            "Чтобы сменить имя, нужно ввести 'имя новое_имя'",
-        )),
-    )
-    .description("Введите пробел и имя")
-    .thumbnail_url(
+        "Чтобы сменить имя, нужно ввести 'имя новое_имя'",
+        "Введите пробел и имя",
         "https://www.lifewithpigs.com/uploads/7/7/7/1/77712458/published/luckpig.png?1518827974"
-            .parse()
-            .unwrap(),
-    );
-    name
+            .into(),
+    )
 }
 
 pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
@@ -116,52 +100,51 @@ pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
     } else {
         new_name
     };
-    let name = InlineQueryResultArticle::new(
+    make_article(
         "change_name",
         "Меняем имя у хряка...",
-        InputMessageContent::Text(InputMessageContentText::new(
-            format!("Имя хрюнделя было изменено на {}", new_name)
-        )),
+        &format!("Имя хрюнделя было изменено на {}", new_name),
+        "Нажмите на кнопку, чтобы сменить имя",
+        "https://media.licdn.com/dms/image/v2/C4E12AQHOTlp8TuFzxg/article-inline_image-shrink_1000_1488/article-inline_image-shrink_1000_1488/0/1520148182297?e=1743033600&v=beta&t=3zE1S7YVIL8QQ7JCyuSvy6Flj9Bm_27l6mRLJmU3Lzo".into(),
     )
-    .description("Нажмите на кнопку, чтобы сменить имя")
-    .thumbnail_url(
-        "https://media.licdn.com/dms/image/v2/C4E12AQHOTlp8TuFzxg/article-inline_image-shrink_1000_1488/article-inline_image-shrink_1000_1488/0/1520148182297?e=1743033600&v=beta&t=3zE1S7YVIL8QQ7JCyuSvy6Flj9Bm_27l6mRLJmU3Lzo"
-            .parse()
-            .unwrap(),
-    );
-    name
 }
 
-pub fn inline_duel_article(
+pub async fn inline_duel_article(
+    pool: &MySqlPool,
     duel_host_id: u64,
     duel_host_mention: String,
-) -> InlineQueryResultArticle {
+    bid: f64,
+) -> anyhow::Result<InlineQueryResultArticle> {
+    let user_balance = economydb::get_balance(pool, duel_host_id).await?;
+    if user_balance < bid {
+        let message = "Недостаточно денег для создания дуэли!";
+
+        let n_money = make_article("not_enough_money",
+            "Ошибка!",
+            "Недостаточно денег для создания дуэли!",
+            "Недостаточно денег для создания дуэли!",
+            "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig".into());
+
+        return Ok(n_money);
+    }
+
     let name = InlineQueryResultArticle::new(
         "duel",
         "Нажмите, чтобы выслать приглашение на дуэль",
         InputMessageContent::Text(InputMessageContentText::new(
-            format!("Нажмите на кнопку, чтобы начать дуэль!")
+            format!("Нажмите на кнопку, чтобы начать дуэль!\nСтавка {}$", bid)
         )),
     )
-    .description("Свинодуэль")
+    .description(format!("Свинодуэль. Ставка {}$", bid))
     .thumbnail_url(
         "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig"
             .parse()
             .unwrap(),
     )
-    .reply_markup(make_duel(duel_host_id, duel_host_mention));
-    name
+    .reply_markup(make_duel(duel_host_id, duel_host_mention, bid));
+    Ok(name)
 }
 
-pub fn inline_no_pig_article() -> InlineQueryResultArticle {
-    let message = "You don't have a pig yet! Please adopt one before dueling!";
-    InlineQueryResultArticle::new(
-        "no_pig",
-        "Вы не можете начать дуэль без собственной свиньи!\nЧтобы создать ее введите команду hryak",
-        InputMessageContent::Text(InputMessageContentText::new(message)),
-    )
-    .description("You don't have a pig yet!")
-}
 pub async fn inline_balance_article(
     pool: &MySqlPool,
     user_id: u64,
@@ -183,4 +166,21 @@ pub async fn inline_balance_article(
     );
 
     Ok(balance_article)
+}
+
+#[inline]
+pub fn make_article(
+    id: &str,
+    title: &str,
+    content: &str,
+    description: &str,
+    url: Option<&str>,
+) -> InlineQueryResultArticle {
+    InlineQueryResultArticle::new(
+        id,
+        title,
+        InputMessageContent::Text(InputMessageContentText::new(content)),
+    )
+    .description(description)
+    .thumbnail_url(url.unwrap_or("https://media.istockphoto.com/id/956025942/photo/newborn-piglet-on-spring-green-grass-on-a-farm.jpg?s=612x612&w=0&k=20&c=H01c3cbV4jozkEHvyathjQL1DtKx6mOd5s7NwACUJwA=").parse().unwrap())
 }

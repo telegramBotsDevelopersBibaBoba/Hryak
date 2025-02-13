@@ -72,12 +72,19 @@ pub async fn economy_handle(
                 todo!("Send error message not enogu money");
             }
 
-            let receiver_id = userdb::id_by_username(&pool, &mention).await.unwrap() as u64; // TODO: Error user doesnt exist
-            let balance_receiver = economydb::get_balance(&pool, receiver_id).await.unwrap();
+            let receiver_id = match userdb::id_by_username(&pool, &mention).await {
+                Ok(id) => id as u64,
+                Err(_) => {
+                    utils::send_msg(&bot, &msg, "Адресата не существует. Попробуйте позже")
+                        .await
+                        .unwrap();
+                    return Ok(());
+                }
+            };
 
             economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount)
                 .await
-                .unwrap(); // Shall not fail cuz of the check before
+                .unwrap();
             economydb::add_money(&pool, receiver_id, amount)
                 .await
                 .unwrap(); // Shall not fail because why would it fail

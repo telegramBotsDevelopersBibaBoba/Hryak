@@ -1,15 +1,10 @@
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 
 use config::commands;
-use sqlx::MySqlPool;
+
 use teloxide::dispatching::HandlerExt;
+use teloxide::prelude::*;
 use teloxide::utils::command::BotCommands;
-use teloxide::{
-    filter_command,
-    prelude::*,
-    types::MessageEntityKind,
-    utils::command::{self},
-};
 
 mod config;
 mod controllers;

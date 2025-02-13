@@ -2,6 +2,7 @@ use teloxide::{
     dispatching::dialogue::GetChatId,
     payloads::SendMessageSetters,
     prelude::{Requester, ResponseResult},
+    sugar::request::RequestReplyExt,
     types::Message,
     Bot,
 };
@@ -31,10 +32,12 @@ pub async fn send_msg(bot: &Bot, msg: &Message, message_text: &str) -> ResponseR
         bot.send_message(msg.chat_id().unwrap(), message_text)
             .parse_mode(teloxide::types::ParseMode::Html)
             .message_thread_id(msg.thread_id.unwrap())
+            .reply_to(msg.id)
             .await?;
     } else {
         bot.send_message(msg.chat_id().unwrap(), message_text)
             .parse_mode(teloxide::types::ParseMode::Html)
+            .reply_to(msg.id)
             .await?;
     }
     Ok(())
