@@ -3,6 +3,8 @@ use teloxide::types::{
     InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
 };
 
+use crate::controllers::pig::{self, Pig};
+use crate::controllers::user;
 use crate::db::pigdb::get_pig_by_user_id;
 use crate::db::{economydb, userdb};
 use crate::handlers::keyboard;
@@ -14,34 +16,14 @@ pub async fn inline_hryak_info_article(
     username: &Option<String>,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
-    let pig = match get_pig_by_user_id(pool, user_id).await {
-        Ok(mass) => {
-            userdb::set_username(
-                pool,
-                username.as_ref().unwrap_or(&"None".to_string()),
-                user_id,
-            )
-            .await?;
-            mass
-        }
-        Err(why) => {
-            eprintln!("{}", why);
-            userdb::create_user(
-                pool,
-                user_id,
-                username.as_ref().unwrap_or(&"None".to_string()),
-            )
-            .await?;
+    let pig = pig::get_pig(pool, user_id).await?;
 
-            let hrundel_weight = make_article("hryak",
-                "Ваш первый хрюндель был создан",
-                "Введите команду еще раз",
-                "Для корректного отображения введите команду еще раз",
-                "https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".into());
-
-            return Ok(hrundel_weight);
-        }
-    };
+    userdb::set_username(
+        pool,
+        username.as_ref().unwrap_or(&"None".to_string()),
+        user_id,
+    )
+    .await?;
 
     let hrundel_weight = make_article("hryak", "Узнать инфу о хряке",
         &format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight),

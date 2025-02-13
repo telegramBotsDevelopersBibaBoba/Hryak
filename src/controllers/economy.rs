@@ -5,8 +5,11 @@ use sqlx::{
 };
 use teloxide::{prelude::ResponseResult, types::Message, Bot};
 
-use crate::{config::commands::EconomyCommands, db::economydb};
 use crate::{config::utils, db::userdb};
+use crate::{
+    config::{commands::EconomyCommands, consts},
+    db::economydb,
+};
 
 pub struct BankAccount {
     balance: f64,
@@ -41,7 +44,7 @@ pub async fn economy_handle(
                 economydb::get_daily_income(&pool, msg.from.as_ref().unwrap().id.0)
                     .await
                     .unwrap();
-            let income_total = daily_multiplier * economydb::BASE_INCOME;
+            let income_total = daily_multiplier * consts::BASE_INCOME;
 
             if let Err(why) =
                 economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await

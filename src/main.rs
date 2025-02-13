@@ -1,21 +1,20 @@
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use config::commands;
-
-use teloxide::dispatching::HandlerExt;
-use teloxide::prelude::*;
-use teloxide::utils::command::BotCommands;
+use teloxide::{
+    payloads::EditMessageText,
+    prelude::*,
+    sugar::bot::BotMessagesExt,
+    types::{
+        InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
+        ParseMode,
+    },
+};
 
 mod config;
 mod controllers;
 mod db;
 mod handlers;
-
-#[derive(BotCommands, Clone)]
-enum Com {
-    #[command(alias = "user")]
-    UserId,
-}
 
 #[tokio::main]
 async fn main() {

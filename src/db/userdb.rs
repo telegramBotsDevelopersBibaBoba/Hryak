@@ -11,8 +11,6 @@ pub async fn create_user(pool: &MySqlPool, user_id: u64, username: &str) -> anyh
         .execute(pool)
         .await?;
 
-    pigdb::create_pig(pool, user_id).await?;
-    economydb::create_bank_account(pool, user_id).await?;
     Ok(())
 }
 

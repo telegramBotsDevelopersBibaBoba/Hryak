@@ -3,7 +3,6 @@ use sqlx::{
     types::chrono::{DateTime, Utc},
     MySqlPool, Row,
 };
-pub const BASE_INCOME: f64 = 1000f64;
 
 pub async fn create_bank_account(pool: &MySqlPool, user_id: u64) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO bank (user_id) VALUES (?)")
@@ -81,7 +80,7 @@ pub async fn do_daily_income(pool: &MySqlPool, user_id: u64) -> anyhow::Result<(
     }
 
     sqlx::query("UPDATE bank SET balance = balance + ? * daily_income, income_time = NOW() WHERE user_id = ?")
-        .bind(BASE_INCOME)
+        .bind(crate::config::consts::BASE_INCOME)
         .bind(user_id)
         .execute(pool)
         .await?;

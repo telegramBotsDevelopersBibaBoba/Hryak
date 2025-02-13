@@ -1,7 +1,9 @@
 use rand::Rng;
 use sqlx::{mysql::MySqlRow, MySqlPool, Row};
 
-use crate::db::{economydb, pigdb};
+use crate::db::{economydb, pigdb, userdb};
+
+use super::user;
 
 pub struct Pig {
     id: i64,
@@ -37,6 +39,13 @@ impl Pig {
         println!("Host: {}\nPart: {}", final_first, final_second);
         final_first > final_second
     }
+}
+
+pub async fn get_pig(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
+    if !userdb::user_exists(pool, user_id).await {
+        user::create_user(pool, user_id, "None").await?;
+    }
+    return pigdb::get_pig_by_user_id(pool, user_id).await;
 }
 
 pub async fn proccess_duel_results(

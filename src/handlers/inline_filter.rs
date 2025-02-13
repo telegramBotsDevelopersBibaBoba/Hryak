@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::config::commands::InlineAdvCommands;
 use crate::config::commands::InlineCommands;
+use crate::config::consts;
 use crate::db::pigdb;
 use crate::handlers::articles;
 use futures::FutureExt;
@@ -13,8 +14,6 @@ use teloxide::{
     types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
-
-const DUEL_DEFAULT_BID: f64 = 10.0;
 
 pub async fn filter_inline_commands(
     bot: Bot,
@@ -44,7 +43,10 @@ pub async fn filter_inline_commands(
             Ok(command) => match command {
                 InlineAdvCommands::ChangeName => inline_change_name(bot, &q, data).boxed(),
                 InlineAdvCommands::Duel => {
-                    let bid = data.trim().parse::<f64>().unwrap_or(DUEL_DEFAULT_BID);
+                    let bid = data
+                        .trim()
+                        .parse::<f64>()
+                        .unwrap_or(consts::DUEL_DEFAULT_BID);
                     inline_duel(bot, &q, &pool, bid).boxed()
                 }
             },
@@ -55,7 +57,9 @@ pub async fn filter_inline_commands(
                 InlineCommands::Hryak => inline_hryak_info(bot, &q, &pool).boxed(),
                 InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
                 InlineCommands::Name => inline_name(bot, &q).boxed(),
-                InlineCommands::Duel => inline_duel(bot, &q, &pool, DUEL_DEFAULT_BID).boxed(),
+                InlineCommands::Duel => {
+                    inline_duel(bot, &q, &pool, consts::DUEL_DEFAULT_BID).boxed()
+                }
                 InlineCommands::Balance => inline_balance(bot, &q, &pool).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
@@ -100,7 +104,7 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
         pool,
         q.from.id.0,
         q.from.mention().unwrap(),
-        DUEL_DEFAULT_BID,
+        consts::DUEL_DEFAULT_BID,
     )
     .await?;
     let help = articles::inline_help_article();
