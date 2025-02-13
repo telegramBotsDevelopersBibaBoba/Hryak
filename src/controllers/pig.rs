@@ -34,7 +34,7 @@ impl Pig {
 
         let final_first = power_first * rand::rng().random_range(0.9..=1.1);
         let final_second = power_second * rand::rng().random_range(0.9..=1.1);
-
+        println!("Host: {}\nPart: {}", final_first, final_second);
         final_first > final_second
     }
 }

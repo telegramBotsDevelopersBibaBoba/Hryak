@@ -62,6 +62,7 @@ async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str]) -> anyhow::R
     bot.answer_callback_query(&q.id)
         .text(format!("Покупка была успешно совершена!"))
         .await?;
+
     // Todo finish you know
     // bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "cock")
     //     .text("fuckme")
