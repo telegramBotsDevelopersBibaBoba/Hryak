@@ -3,11 +3,7 @@ use std::str::FromStr;
 use anyhow::anyhow;
 use futures::FutureExt;
 use sqlx::MySqlPool;
-use teloxide::{
-    prelude::{Request, Requester},
-    types::ChosenInlineResult,
-    Bot, RequestError,
-};
+use teloxide::{types::ChosenInlineResult, Bot, RequestError};
 
 use crate::{config::commands::FeedbackCommands, db::pigdb, deser_command};
 

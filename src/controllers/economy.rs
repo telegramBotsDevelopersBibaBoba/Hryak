@@ -81,11 +81,10 @@ pub async fn economy_handle(
                     return Ok(());
                 }
             };
-            let balance_receiver = economydb::get_balance(&pool, receiver_id).await.unwrap();
 
             economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount)
                 .await
-                .unwrap(); // Shall not fail cuz of the check before
+                .unwrap();
             economydb::add_money(&pool, receiver_id, amount)
                 .await
                 .unwrap(); // Shall not fail because why would it fail

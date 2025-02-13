@@ -2,23 +2,18 @@ use std::str::FromStr;
 
 use crate::config::commands::InlineAdvCommands;
 use crate::config::commands::InlineCommands;
-use crate::db::economydb;
 use crate::db::pigdb;
 use crate::handlers::articles;
 use futures::FutureExt;
 use sqlx::MySqlPool;
 use teloxide::payloads::AnswerInlineQuerySetters;
 use teloxide::prelude::Request;
-use teloxide::types::InlineQueryResultArticle;
-use teloxide::types::InputMessageContent;
-use teloxide::types::InputMessageContentText;
 use teloxide::{
     prelude::Requester,
     types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
 
-use super::articles::make_article;
 pub async fn filter_inline_commands(
     bot: Bot,
     q: InlineQuery,

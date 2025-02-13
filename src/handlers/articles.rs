@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use sqlx::MySqlPool;
 use teloxide::types::{
     InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,

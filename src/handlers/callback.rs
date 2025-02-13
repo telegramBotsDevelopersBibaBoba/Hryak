@@ -149,7 +149,7 @@ async fn callbak_start_duel(
     .await?;
 
     if pig_first.duel(&pig_second) {
-        proccess_duel_results(pool, &pig_first, &pig_second, host_id, part_id).await?;
+        proccess_duel_results(pool, host_id, part_id, bid).await?;
 
         let msg = format!("Победителем оказался: {}", data[1]);
         bot.edit_message_text_inline(q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?, msg)
@@ -161,7 +161,7 @@ async fn callbak_start_duel(
             .send()
             .await?;
     } else {
-        proccess_duel_results(pool, &pig_second, &pig_first, part_id, host_id).await?;
+        proccess_duel_results(pool, part_id, host_id, bid).await?;
 
         let msg = format!("Победителем оказался: {}", q.from.mention().unwrap());
         bot.edit_message_text_inline(q.inline_message_id.as_ref().ok_or(anyhow!("Error"))?, msg)

@@ -32,8 +32,8 @@ impl Pig {
         let power_first = self.attack + mass_weight * self.weight;
         let power_second = other_pig.attack + mass_weight * other_pig.weight;
 
-        let final_first = power_first * rand::rng().random_range(0.9..=1.1);
-        let final_second = power_second * rand::rng().random_range(0.9..=1.1);
+        let final_first = power_first * rand::rng().random_range(0.5..=1.1);
+        let final_second = power_second * rand::rng().random_range(0.5..=1.1);
         println!("Host: {}\nPart: {}", final_first, final_second);
         final_first > final_second
     }
@@ -41,17 +41,11 @@ impl Pig {
 
 pub async fn proccess_duel_results(
     pool: &MySqlPool,
-    pig_winner: &Pig,
-    pig_loser: &Pig,
     winner_id: u64,
     loser_id: u64,
+    bid: f64,
 ) -> anyhow::Result<()> {
-    let mut winner_balance = economydb::get_balance(pool, winner_id).await?;
-    let mut loser_balance = economydb::get_balance(pool, loser_id).await?;
-    let money_bid = (winner_balance / 10.0).min(loser_balance / 10.0);
-
-    economydb::add_money(pool, winner_id, money_bid).await?;
-    economydb::sub_money(pool, loser_id, money_bid).await?;
-
+    economydb::add_money(pool, winner_id, bid * 2.0).await?;
+    economydb::sub_money(pool, loser_id, bid).await?;
     Ok(())
 }

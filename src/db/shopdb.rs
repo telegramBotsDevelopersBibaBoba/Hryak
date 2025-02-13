@@ -1,5 +1,5 @@
 use crate::controllers::shop::FoodOffer;
-use sqlx::{MySqlPool, Row};
+use sqlx::MySqlPool;
 
 pub async fn get_food_offer_by_id(pool: &MySqlPool, offer_id: u64) -> anyhow::Result<FoodOffer> {
     let row = sqlx::query("SELECT * FROM shop_food WHERE id = ?")

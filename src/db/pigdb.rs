@@ -1,5 +1,4 @@
 use crate::controllers::pig::Pig;
-use sqlx::types::BigDecimal;
 use sqlx::MySqlPool;
 use sqlx::Row;
 
