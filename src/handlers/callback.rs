@@ -13,7 +13,7 @@ use teloxide::{
 use tokio::time::sleep;
 
 use crate::{
-    config::commands::CallbackCommands,
+    config::{commands::CallbackCommands, consts},
     controllers::pig::proccess_duel_results,
     db::{economydb, pigdb},
     deser_command,
@@ -91,7 +91,7 @@ async fn callbak_start_duel(
         return Ok(());
     }
 
-    let host_id = data[0].trim().parse::<u64>().unwrap();
+    let host_id = data[0].trim().parse::<u64>()?;
 
     if !pigdb::pig_exists(pool, part_id).await {
         bot.answer_callback_query(&q.id)
@@ -110,7 +110,10 @@ async fn callbak_start_duel(
         return Ok(());
     }
 
-    let bid = data[2].trim().parse::<f64>().unwrap_or(1.0);
+    let bid = data[2]
+        .trim()
+        .parse::<f64>()
+        .unwrap_or(consts::DUEL_DEFAULT_BID);
     let part_balance = economydb::get_balance(pool, part_id).await?;
     if part_balance < bid {
         bot.answer_callback_query(&q.id)

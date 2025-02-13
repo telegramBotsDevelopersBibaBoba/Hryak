@@ -14,6 +14,8 @@ use teloxide::{
     Bot, RequestError,
 };
 
+const DUEL_DEFAULT_BID: f64 = 10.0;
+
 pub async fn filter_inline_commands(
     bot: Bot,
     q: InlineQuery,
@@ -42,7 +44,7 @@ pub async fn filter_inline_commands(
             Ok(command) => match command {
                 InlineAdvCommands::ChangeName => inline_change_name(bot, &q, data).boxed(),
                 InlineAdvCommands::Duel => {
-                    let bid = data.trim().parse::<f64>().unwrap_or(10.0);
+                    let bid = data.trim().parse::<f64>().unwrap_or(DUEL_DEFAULT_BID);
                     inline_duel(bot, &q, &pool, bid).boxed()
                 }
             },
@@ -53,7 +55,7 @@ pub async fn filter_inline_commands(
                 InlineCommands::Hryak => inline_hryak_info(bot, &q, &pool).boxed(),
                 InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
                 InlineCommands::Name => inline_name(bot, &q).boxed(),
-                InlineCommands::Duel => inline_duel(bot, &q, &pool, 10.0).boxed(),
+                InlineCommands::Duel => inline_duel(bot, &q, &pool, DUEL_DEFAULT_BID).boxed(),
                 InlineCommands::Balance => inline_balance(bot, &q, &pool).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
@@ -94,8 +96,13 @@ async fn inline_error(
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
-    let duel =
-        articles::inline_duel_article(pool, q.from.id.0, q.from.mention().unwrap(), 10.0).await?;
+    let duel = articles::inline_duel_article(
+        pool,
+        q.from.id.0,
+        q.from.mention().unwrap(),
+        DUEL_DEFAULT_BID,
+    )
+    .await?;
     let help = articles::inline_help_article();
     let shop = articles::inline_shop_article();
     let balance = articles::inline_balance_article(pool, q.from.id.0).await?;
