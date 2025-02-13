@@ -93,20 +93,20 @@ async fn callbak_start_duel(
 
     let host_id = data[0].trim().parse::<u64>()?;
 
+    if host_id == part_id {
+        bot.answer_callback_query(&q.id)
+            .text("Нельзя дуэлить себя идиот гадэмн бля")
+            .send()
+            .await?;
+        return Ok(());
+    }
+
     if !pigdb::pig_exists(pool, part_id).await {
         bot.answer_callback_query(&q.id)
             .text("У тебя нет свиньи! Подуэлиться не получиться.\nИспользуй бота, чтобы она создалась автоматически")
             .send()
             .await?;
 
-        return Ok(());
-    }
-
-    if host_id == part_id {
-        bot.answer_callback_query(&q.id)
-            .text("Нельзя дуэлить себя идиот гадэмн бля")
-            .send()
-            .await?;
         return Ok(());
     }
 

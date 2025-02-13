@@ -74,7 +74,7 @@ pub async fn economy_handle(
             if balance_host < amount {
                 todo!("Send error message not enogu money");
             }
-
+            println!("here");
             let receiver_id = match userdb::id_by_username(&pool, &mention).await {
                 Ok(id) => id as u64,
                 Err(_) => {

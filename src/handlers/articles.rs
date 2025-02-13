@@ -4,8 +4,6 @@ use teloxide::types::{
 };
 
 use crate::controllers::pig::{self, Pig};
-use crate::controllers::user;
-use crate::db::pigdb::get_pig_by_user_id;
 use crate::db::{economydb, userdb};
 use crate::handlers::keyboard;
 
@@ -17,13 +15,6 @@ pub async fn inline_hryak_info_article(
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let pig = pig::get_pig(pool, user_id).await?;
-
-    userdb::set_username(
-        pool,
-        username.as_ref().unwrap_or(&"None".to_string()),
-        user_id,
-    )
-    .await?;
 
     let hrundel_weight = make_article("hryak", "Узнать инфу о хряке",
         &format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight),

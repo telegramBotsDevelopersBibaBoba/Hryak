@@ -3,7 +3,9 @@ use std::str::FromStr;
 use crate::config::commands::InlineAdvCommands;
 use crate::config::commands::InlineCommands;
 use crate::config::consts;
+use crate::controllers::user;
 use crate::db::pigdb;
+use crate::db::userdb;
 use crate::handlers::articles;
 use futures::FutureExt;
 use sqlx::MySqlPool;
@@ -33,6 +35,13 @@ pub async fn filter_inline_commands(
         .unwrap();
         return Ok(());
     }
+
+    if !userdb::user_exists(&pool, q.from.id.0).await {
+        user::create_user(&pool, q.from.id.0, "None").await.unwrap();
+    }
+    userdb::set_username(&pool, q.from.username.as_ref().unwrap(), q.from.id.0)
+        .await
+        .unwrap();
 
     let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
     let command_data = &q.query.split_once(" ");
@@ -170,19 +179,6 @@ async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow::Re
 }
 
 async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool, bid: f64) -> anyhow::Result<()> {
-    if !pigdb::pig_exists(pool, q.from.id.0).await {
-        let no_pig = articles::make_article("no_pig",
-            "Ошибка!",
-            "Вы не можете начать дуэль без собственной свиньи!\nЧтобы создать ее введите команду hryak", "Вы не можете начать дуэль без собственной свиньи!\nЧтобы создать ее введите команду hryak",
-            "https://www.goodheartanimalsanctuaries.com/wp-content/uploads/2020/05/PigForaging.jpg".into());
-
-        let articles = vec![InlineQueryResult::Article(no_pig)];
-        bot.answer_inline_query(&q.id, articles)
-            .cache_time(0)
-            .await?;
-        return Ok(());
-    }
-
     let duel =
         articles::inline_duel_article(&pool, q.from.id.0, q.from.mention().unwrap(), bid).await?;
     let articles = vec![InlineQueryResult::Article(duel)];
