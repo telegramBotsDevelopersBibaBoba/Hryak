@@ -4,6 +4,7 @@ use teloxide::types::{
     InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
 };
 
+use crate::controllers::shop;
 use crate::db::pigdb::get_pig_by_user_id;
 use crate::db::userdb;
 use crate::handlers::keyboard;
@@ -77,11 +78,15 @@ pub fn inline_help_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResu
     help
 }
 
-pub fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResultArticle {
+pub async fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<InlineQueryResultArticle> {
+    let offers = shop::get_daily_offers();
+
+    let (kb, text) = keyboard::make_shop(&offers, &pool).await?;
+    
     let shop = InlineQueryResultArticle::new(
         "shop".to_string(),
         "Закупки".to_string(),
-        InputMessageContent::Text(InputMessageContentText::new("Покупай:")),
+        InputMessageContent::Text(InputMessageContentText::new(text)),
     )
     .description("Шоп")
     .thumbnail_url(
@@ -89,8 +94,8 @@ pub fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> InlineQueryResu
             .parse()
             .unwrap(),
     )
-    .reply_markup(keyboard::make_shop()); // Showing a 'keyboard' with all the additional inline queries
-    shop
+    .reply_markup(kb); // Showing a 'keyboard' with all the additional inline queries
+    Ok(shop)
 }
 
 pub fn inline_name_article() -> InlineQueryResultArticle {

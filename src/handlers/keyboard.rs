@@ -16,7 +16,7 @@ pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new([[button, button2, button3]])
 }
 
-pub async fn make_shop(shop_items_indexes: &[(u64, OfferType)], pool: &MySqlPool) -> anyhow::Result<(InlineKeyboardMarkup, String)> {
+pub async fn make_shop(shop_items_indexes: &Vec<(u64, OfferType)>, pool: &MySqlPool) -> anyhow::Result<(InlineKeyboardMarkup, String)> {
     // Make different buttons
     let mut buttons = Vec::new();
     let mut text = String::new();

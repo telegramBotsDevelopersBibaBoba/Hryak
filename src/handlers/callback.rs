@@ -2,6 +2,7 @@ use std::{str::FromStr, time::Duration};
 
 use anyhow::anyhow;
 use futures::FutureExt;
+use crate::{controllers::{shop::Offer, user}};
 
 use sqlx::MySqlPool;
 use teloxide::{
@@ -13,7 +14,7 @@ use teloxide::{
 use tokio::time::sleep;
 
 use crate::{
-    config::commands::CallbackCommands, controllers::pig::proccess_duel_results, db::pigdb,
+    config::commands::CallbackCommands, controllers::{pig::proccess_duel_results, shop::OfferType}, db::{pigdb, shopdb, economydb},
     deser_command,
 };
 
@@ -32,7 +33,7 @@ pub async fn filter_callback_commands(
     // Parsing query and figuring out a command based on it
     let function = match CallbackCommands::from_str(data_vec[0]) {
         Ok(command) => match command {
-            CallbackCommands::Shop => callback_shop(&bot, &q, &data_vec[1..]).boxed(), // args are <type> <name>
+            CallbackCommands::Shop => callback_shop(&bot, &q, &data_vec[1..], &pool).boxed(), // args are <type> <id>
             CallbackCommands::StartDuel => {
                 callbak_start_duel(&bot, &q, &data_vec[1..], q.from.id.0, &pool).boxed()
                 // Args are <host-id> <host-mention>
@@ -56,17 +57,33 @@ async fn callback_error(bot: &Bot, q: &CallbackQuery) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str]) -> anyhow::Result<()> {
-    bot.answer_callback_query(&q.id)
-        .text(format!("Покупка была успешно совершена!"))
-        .await?;
+async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str], pool: &MySqlPool) -> anyhow::Result<()> {
+    
     // Todo finish you know
     // bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "cock")
     //     .text("fuckme")
     //     .reply_markup(make_shop())
     //     .await?;
 
-    Ok(())
+    if let [offer_type, offer_id] = *data {
+        let offer_type = OfferType::from(offer_type);
+        let offer_id = offer_id.parse().unwrap();
+        let user_id = q.from.id.0;
+
+        let answer = match economydb::try_to_buy(pool, user_id, offer_id, offer_type).await {
+            Ok(item) => {
+                item.use_item(user_id, pool).await?;
+                "Успех"
+            }
+            _ => "Недостаточно рупий",
+        };
+        bot.answer_callback_query(&q.id)
+            .text(answer)
+            .await?;
+        Ok(())
+    } else {
+        return Err(anyhow!("incorrect data {:?}", data))
+    }
 }
 
 async fn callbak_start_duel(

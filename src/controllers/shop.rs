@@ -1,10 +1,10 @@
-use sqlx::{mysql::MySqlRow, Row};
+use sqlx::{mysql::MySqlRow, MySqlPool, Row};
 use teloxide::types::InlineKeyboardButton;
-use crate::ser_command;
+use crate::{db::pigdb, ser_command};
 use std::fmt::Display;
 
 pub struct FoodOffer {
-    id: u64,
+    id: i64,
     price: f64,
     nutrition: f64,
     title: String,
@@ -13,11 +13,11 @@ pub struct FoodOffer {
 
 impl FoodOffer {
     pub fn from_mysql_row(row: MySqlRow) -> anyhow::Result<Self> {
-        let id = row.try_get::<u64, _>(0)?;
-        let price = row.try_get::<f64, _>(1)?;
-        let nutrition = row.try_get::<f64, _>(2)?;
-        let title = row.try_get::<String, _>(3)?;
-        let description = row.try_get::<String, _>(4)?;
+        let id = row.try_get::<i64, _>(0)?;
+        let price = row.try_get::<f64, _>(2)?;
+        let nutrition = row.try_get::<f64, _>(4)?;
+        let title = row.try_get::<String, _>(1)?;
+        let description = row.try_get::<String, _>(3)?;
 
         Ok(Self {
             id,
@@ -36,7 +36,7 @@ impl Display for FoodOffer {
 }
 
 pub struct ImprovementOffer {
-    id: u64,
+    id: i64,
     title: String,
     price: f64,
     description: String,
@@ -45,7 +45,7 @@ pub struct ImprovementOffer {
 
 impl ImprovementOffer {
     pub fn from_mysql_row(row: MySqlRow) -> anyhow::Result<Self> {
-        let id = row.try_get::<u64, _>(0)?;
+        let id = row.try_get::<i64, _>(0)?;
         let title = row.try_get::<String, _>(1)?;
         let price = row.try_get::<f64, _>(2)?;
         let description: String = row.try_get::<Option<String>, _>(3)?
@@ -64,7 +64,7 @@ impl ImprovementOffer {
 
 impl Display for ImprovementOffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} - {} ({}): {}", self.price, self.title, self.improvement_type, self.description)
+        write!(f, "{}$ - {} ({}): {}", self.price, self.title, self.improvement_type, self.description)
     }
 }
 
@@ -72,6 +72,16 @@ impl Display for ImprovementOffer {
 pub enum OfferType {
     Improvement,
     Food,
+}
+
+impl From<&str> for OfferType {
+    fn from(value: &str) -> Self {
+        match value {
+            "food" => Self::Food,
+            "improvement" => Self::Improvement,
+            val => panic!("incorrect value for OfferType: {}", val),
+        }
+    }
 }
 
 pub enum Offer {
@@ -87,7 +97,7 @@ impl Offer {
         };
         InlineKeyboardButton::callback(
             format!("{}) {}", index, title), 
-            ser_command!("shop", "food", &id.to_string())
+            ser_command!("shop", offer_type, &id.to_string())
         )
     }
 
@@ -97,8 +107,28 @@ impl Offer {
             Self::Improvement(item) => format!("{}) {}\n", index, item),
         }
     }
+
+    pub fn get_price(&self) -> f64 {
+        match self {
+            Self::Food(item) => item.price,
+            Self::Improvement(item) => item.price,
+        }
+    }
+
+    pub async fn use_item(&self, by_user: u64, pool: &MySqlPool) -> anyhow::Result<()>{
+        match self {
+            Self::Food(item) => pigdb::add_to_pig_weight(pool, item.nutrition, by_user).await,
+            Self::Improvement(item) => Ok(())
+        }
+    }
 }
 
-pub fn get_daily_offers() -> [u64; 5] {
-    todo!()
+
+pub fn get_daily_offers() -> Vec<(u64, OfferType)> {
+    vec![
+        (1, OfferType::Food),
+        (2, OfferType::Improvement),
+        (3, OfferType::Food),
+        (4, OfferType::Improvement),
+    ]
 }

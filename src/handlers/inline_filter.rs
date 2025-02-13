@@ -16,6 +16,7 @@ use teloxide::{
     types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
+
 pub async fn filter_inline_commands(
     bot: Bot,
     q: InlineQuery,
@@ -95,7 +96,7 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
     let hryak = articles::inline_hryak_info_article(q, pool).await?;
     let duel = articles::inline_duel_article(q.from.id.0, q.from.mention().unwrap());
     let help = articles::inline_help_article(q, pool);
-    let test_shop = articles::inline_shop_article(q, pool);
+    let test_shop = articles::inline_shop_article(q, pool).await?;
 
     // Showing several articles at once
     let articles = vec![
@@ -123,7 +124,7 @@ async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyho
 }
 
 async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let shop = articles::inline_shop_article(q, pool);
+    let shop = articles::inline_shop_article(q, pool).await?;
 
     let articles = vec![InlineQueryResult::Article(shop)];
 
