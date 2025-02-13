@@ -4,6 +4,10 @@ use sqlx::{
     MySqlPool, Row,
 };
 
+use crate::controllers::shop::{Offer, OfferType};
+
+use super::shopdb;
+
 pub async fn create_bank_account(pool: &MySqlPool, user_id: u64) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO bank (user_id) VALUES (?)")
         .bind(user_id)
@@ -24,6 +28,7 @@ pub async fn add_money(pool: &MySqlPool, user_id: u64, money: f64) -> anyhow::Re
 
 pub async fn sub_money(pool: &MySqlPool, user_id: u64, money: f64) -> anyhow::Result<()> {
     let balance = get_balance(pool, user_id).await?;
+    println!("{balance}, {}", money);
 
     if balance < money {
         return Err(anyhow!("not enough money"));
@@ -86,4 +91,19 @@ pub async fn do_daily_income(pool: &MySqlPool, user_id: u64) -> anyhow::Result<(
         .await?;
 
     Ok(())
+}
+
+pub async fn try_to_buy(pool: &MySqlPool, user_id: u64, offer_id: u64, offer_type: OfferType) -> anyhow::Result<Offer> {
+    let offer = match offer_type {
+        OfferType::Food => Offer::Food(shopdb::get_food_offer_by_id(pool, offer_id).await?),
+        OfferType::Improvement => Offer::Improvement(shopdb::get_improvement_offer_by_id(pool, offer_id).await?),
+    };
+
+    match sub_money(pool, user_id, offer.get_price()).await {
+        Ok(_) => Ok(offer),
+        Err(why) => {
+            println!("{why}");
+            Err(anyhow!("Not enough money"))
+        }
+    }
 }

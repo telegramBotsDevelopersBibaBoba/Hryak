@@ -117,7 +117,7 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
     )
     .await?;
     let help = articles::inline_help_article();
-    let shop = articles::inline_shop_article();
+    let shop = articles::inline_shop_article(q, pool).await?;
     let balance = articles::inline_balance_article(pool, q.from.id.0).await?;
 
     // Showing several articles at once
@@ -147,7 +147,7 @@ async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyho
 }
 
 async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let shop = articles::inline_shop_article();
+    let shop = articles::inline_shop_article(q, pool).await?;
 
     let articles = vec![InlineQueryResult::Article(shop)];
 

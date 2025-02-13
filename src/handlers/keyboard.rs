@@ -1,4 +1,7 @@
+use sqlx::MySqlPool;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
+use crate::controllers::shop::OfferType;
+use crate::db::shopdb;
 
 use crate::ser_command;
 
@@ -15,17 +18,18 @@ pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new([[button, button2, button3]])
 }
 
-pub fn make_shop() -> InlineKeyboardMarkup {
+pub async fn make_shop(shop_items_indexes: &Vec<(u64, OfferType)>, pool: &MySqlPool) -> anyhow::Result<(InlineKeyboardMarkup, String)> {
     // Make different buttons
-    let buttons = vec![
-        InlineKeyboardButton::callback(
-            "Купить боярышник х1",
-            ser_command!("shop", "food", "boyarishnik"),
-        ),
-        InlineKeyboardButton::callback("Купить ничего", ser_command!("shop", "food", "nothing")),
-    ];
+    let mut buttons = Vec::new();
+    let mut text = String::new();
 
-    InlineKeyboardMarkup::new([buttons])
+    for (i, (item_id, offer_type)) in shop_items_indexes.iter().enumerate() {
+        let item = shopdb::get_offer(pool, *offer_type, *item_id).await?;
+        buttons.push(vec![item.get_button(i + 1)]);
+        text.push_str(&item.get_info(i + 1));
+    }
+
+    Ok((InlineKeyboardMarkup::new(buttons), text))
 }
 
 pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String, bid: f64) -> InlineKeyboardMarkup {
