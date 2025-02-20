@@ -67,7 +67,31 @@ pub async fn set_pig_weight(pool: &MySqlPool, new_weight: f64, user_id: u64) -> 
     Ok(())
 }
 
-pub async fn add_to_pig_weight(pool: &MySqlPool, nutrition: f64, user_id: u64) -> anyhow::Result<()> {
+pub async fn increase_attack(
+    pool: &MySqlPool,
+    add_attack: f64,
+    user_id: u64,
+) -> anyhow::Result<()> {
+    sqlx::query("UPDATE pigs SET attack = attack + ? WHERE user_id = ?")
+        .bind(add_attack)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn increase_defense(pool: &MySqlPool, add_def: f64, user_id: u64) -> anyhow::Result<()> {
+    sqlx::query("UPDATE pigs SET attack = attack + ? WHERE user_id = ?")
+        .bind(add_def)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn feed_pig(pool: &MySqlPool, nutrition: f64, user_id: u64) -> anyhow::Result<()> {
     let mass = nutrition / 1000.0;
 
     sqlx::query("UPDATE pigs SET weight = weight + ? WHERE user_id = ?")

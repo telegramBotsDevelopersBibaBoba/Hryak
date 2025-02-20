@@ -25,7 +25,7 @@ async fn main() {
     pretty_env_logger::init();
     log::info!("Starting inline bot...");
 
-    let con_str = "mysql://root:_Root123@localhost:3306/hryak";
+    let con_str = "mysql://klewy:root@localhost:3306/hryak";
 
     let pool = sqlx::mysql::MySqlPoolOptions::new()
         .max_connections(10)

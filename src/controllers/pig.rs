@@ -10,6 +10,7 @@ pub struct Pig {
     pub user_id: i64,
     pub weight: f64,
     pub attack: f64,
+    pub defense: f64,
     pub name: String,
 }
 
@@ -19,13 +20,15 @@ impl Pig {
         let user_id = row.try_get::<i64, _>(1)?;
         let weight = row.try_get::<f64, _>(2)?;
         let attack = row.try_get::<f64, _>(3)?;
-        let name = row.try_get::<String, _>(4)?;
+        let defense: f64 = row.try_get(4)?;
+        let name = row.try_get::<String, _>(5)?;
 
         Ok(Self {
             id,
             user_id,
             weight,
             attack,
+            defense,
             name,
         })
     }
