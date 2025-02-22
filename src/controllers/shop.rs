@@ -3,8 +3,13 @@ use crate::{
     ser_command,
 };
 use anyhow::anyhow;
+use rand::Rng;
 use sqlx::{mysql::MySqlRow, MySqlPool, Row};
-use std::fmt::{format, Display};
+use std::{
+    fmt::{format, Display},
+    thread,
+    time::Duration,
+};
 use teloxide::types::InlineKeyboardButton;
 
 pub struct FoodOffer {
@@ -206,11 +211,53 @@ impl Offer {
 }
 
 pub fn get_daily_offers() -> Vec<(u64, OfferType)> {
-    vec![
-        (1, OfferType::Food),
-        (2, OfferType::Improvement),
-        (3, OfferType::Food),
-        (4, OfferType::Improvement),
-        (4, OfferType::Buff),
-    ]
+    unsafe {
+        return TODAYS_OFFERS.clone();
+    };
+}
+static mut TODAYS_OFFERS: Vec<(u64, OfferType)> = Vec::new();
+
+const FOOD_OFFERS_MAX: u64 = 20;
+const IMPROV_OFFERS_MAX: u64 = 20;
+const BUFF_OFFERS_MAX: u64 = 20;
+
+pub async fn generate_new_offers() {
+    unsafe {
+        TODAYS_OFFERS.clear();
+    }
+
+    let generate_unique_offer = |max: u64, exclude: u64| {
+        let mut id;
+        loop {
+            id = rand::rng().random_range(1..=max);
+            if id != exclude {
+                break id;
+            }
+        }
+    };
+
+    let food_offer_first = rand::rng().random_range(1..=FOOD_OFFERS_MAX);
+    let food_offer_second = generate_unique_offer(FOOD_OFFERS_MAX, food_offer_first);
+
+    let improv_offer_first = rand::rng().random_range(1..=IMPROV_OFFERS_MAX);
+    let improv_offer_second = generate_unique_offer(IMPROV_OFFERS_MAX, improv_offer_first);
+
+    let buff_offer_first = rand::rng().random_range(1..=BUFF_OFFERS_MAX);
+    let buff_offer_second = generate_unique_offer(BUFF_OFFERS_MAX, buff_offer_first);
+
+    unsafe {
+        TODAYS_OFFERS.reserve(7);
+        TODAYS_OFFERS.push((food_offer_first, OfferType::Food));
+        TODAYS_OFFERS.push((food_offer_second, OfferType::Food));
+
+        TODAYS_OFFERS.push((improv_offer_first, OfferType::Improvement));
+        TODAYS_OFFERS.push((improv_offer_second, OfferType::Improvement));
+
+        TODAYS_OFFERS.push((buff_offer_first, OfferType::Buff));
+        TODAYS_OFFERS.push((buff_offer_second, OfferType::Buff));
+    }
+
+    println!("Sleeping");
+    thread::sleep(Duration::from_secs(86400));
+    println!("Stopped sleeping");
 }

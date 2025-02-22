@@ -1,7 +1,7 @@
 use std::{str::FromStr, time::Duration};
 
 use config::commands;
-use controllers::shop::OfferType;
+use controllers::shop::{self, OfferType};
 use handlers::keyboard;
 use sqlx::MySqlPool;
 use teloxide::utils::command::BotCommands;
@@ -35,6 +35,8 @@ async fn main() {
         .expect("Cant connect fuck it");
 
     let bot = Bot::from_env(); // Setting up bot from TELOXIDE_TOKEN env variable (P.S 'export TELOXIDE_TOKEN=<token>' in terminal)
+
+    tokio::spawn(shop::generate_new_offers());
 
     // Just boilerplate stuff
     let handler = dptree::entry()
