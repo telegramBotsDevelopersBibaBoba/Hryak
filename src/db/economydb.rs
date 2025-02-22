@@ -84,19 +84,40 @@ pub async fn do_daily_income(pool: &MySqlPool, user_id: u64) -> anyhow::Result<(
         return Err(anyhow!("Рано"));
     }
 
-    sqlx::query("UPDATE bank SET balance = balance + ? * daily_income, income_time = NOW() WHERE user_id = ?")
-        .bind(crate::config::consts::BASE_INCOME)
-        .bind(user_id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "UPDATE bank SET balance = balance + daily_income, income_time = NOW() WHERE user_id = ?",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await?;
 
     Ok(())
 }
 
-pub async fn try_to_buy(pool: &MySqlPool, user_id: u64, offer_id: u64, offer_type: OfferType) -> anyhow::Result<Offer> {
+pub async fn increase_daily_income(
+    pool: &MySqlPool,
+    user_id: u64,
+    add_income: f64,
+) -> anyhow::Result<()> {
+    sqlx::query("UPDATE bank SET daily_income = daily_income + ? WHERE user_id = ?")
+        .bind(add_income)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn try_to_buy(
+    pool: &MySqlPool,
+    user_id: u64,
+    offer_id: u64,
+    offer_type: OfferType,
+) -> anyhow::Result<Offer> {
     let offer = match offer_type {
         OfferType::Food => Offer::Food(shopdb::get_food_offer_by_id(pool, offer_id).await?),
+        #[rustfmt::skip]
         OfferType::Improvement => Offer::Improvement(shopdb::get_improvement_offer_by_id(pool, offer_id).await?),
+        OfferType::Buff => Offer::Buff(shopdb::get_buff_offer_by_id(pool, offer_id).await?),
     };
 
     match sub_money(pool, user_id, offer.get_price()).await {

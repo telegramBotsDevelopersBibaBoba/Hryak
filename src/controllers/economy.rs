@@ -40,11 +40,10 @@ pub async fn economy_handle(
 ) -> ResponseResult<()> {
     match cmd {
         EconomyCommands::DailyIncome => {
-            let (daily_multiplier, last_income) =
+            let (income_total, last_income) =
                 economydb::get_daily_income(&pool, msg.from.as_ref().unwrap().id.0)
                     .await
                     .unwrap();
-            let income_total = daily_multiplier * consts::BASE_INCOME;
 
             if let Err(why) =
                 economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await
