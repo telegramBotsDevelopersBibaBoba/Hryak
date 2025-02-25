@@ -25,7 +25,7 @@ pub async fn inline_hryak_info_article(
     Ok(hrundel_weight)
 }
 pub fn inline_help_article() -> InlineQueryResultArticle {
-    let help = InlineQueryResultArticle::new(
+    InlineQueryResultArticle::new(
         "help".to_string(),
         "Помощь".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(
@@ -38,15 +38,31 @@ pub fn inline_help_article() -> InlineQueryResultArticle {
             .parse()
             .unwrap(),
     )
-    .reply_markup(keyboard::make_more_info_keyboard()); // Showing a 'keyboard' with all the additional inline queries
-    help
+    .reply_markup(keyboard::make_more_info_keyboard()) // Showing a 'keyboard' with all the additional inline queries
 }
 
-pub async fn inline_shop_article(q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<InlineQueryResultArticle> {
+pub fn inline_guessing_game_article() -> InlineQueryResultArticle {
+    InlineQueryResultArticle::new(
+        "guessing_game",
+        "Игра 'Угадывание числа'",
+        InputMessageContent::Text(InputMessageContentText::new("Игра начинается...")),
+    )
+    .description("Нажми, чтобы начать игру")
+    .thumbnail_url(
+        "https://thumbs.dreamstime.com/z/lot-pigs-d-rendered-illustration-127843482.jpg"
+            .parse()
+            .unwrap(),
+    )
+}
+
+pub async fn inline_shop_article(
+    q: &InlineQuery,
+    pool: &MySqlPool,
+) -> anyhow::Result<InlineQueryResultArticle> {
     let offers = shop::get_daily_offers();
 
     let (kb, text) = keyboard::make_shop(&offers, &pool).await?;
-    
+
     let shop = InlineQueryResultArticle::new(
         "shop".to_string(),
         "Закупки".to_string(),
@@ -162,4 +178,17 @@ pub fn make_article(
     )
     .description(description)
     .thumbnail_url(url.unwrap_or("https://media.istockphoto.com/id/956025942/photo/newborn-piglet-on-spring-green-grass-on-a-farm.jpg?s=612x612&w=0&k=20&c=H01c3cbV4jozkEHvyathjQL1DtKx6mOd5s7NwACUJwA=").parse().unwrap())
+}
+
+pub fn gamble_games_article() -> InlineQueryResultArticle {
+    InlineQueryResultArticle::new(
+        "gambling",
+        "Список доступных азартных игр",
+        InputMessageContent::Text(InputMessageContentText::new(
+            "Посмотрите список доступных игр..todo all games",
+        )),
+    )
+    .description("Посмотрите список доступных вам игр")
+    .thumbnail_url("https://media.istockphoto.com/id/956025942/photo/newborn-piglet-on-spring-green-grass-on-a-farm.jpg?s=612x612&w=0&k=20&c=H01c3cbV4jozkEHvyathjQL1DtKx6mOd5s7NwACUJwA=".parse().unwrap())
+    .reply_markup(keyboard::make_gambling_game_keyboard())
 }

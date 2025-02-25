@@ -1,7 +1,7 @@
-use sqlx::MySqlPool;
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 use crate::controllers::shop::OfferType;
 use crate::db::shopdb;
+use sqlx::MySqlPool;
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use crate::ser_command;
 
@@ -18,7 +18,17 @@ pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new([[button, button2, button3]])
 }
 
-pub async fn make_shop(shop_items_indexes: &Vec<(u64, OfferType)>, pool: &MySqlPool) -> anyhow::Result<(InlineKeyboardMarkup, String)> {
+pub fn make_gambling_game_keyboard() -> InlineKeyboardMarkup {
+    let button =
+        InlineKeyboardButton::switch_inline_query_current_chat("Угадать число", "угадывание");
+    // TODO: More games
+    InlineKeyboardMarkup::new([[button]])
+}
+
+pub async fn make_shop(
+    shop_items_indexes: &Vec<(u64, OfferType)>,
+    pool: &MySqlPool,
+) -> anyhow::Result<(InlineKeyboardMarkup, String)> {
     // Make different buttons
     let mut buttons = Vec::new();
     let mut text = String::new();
