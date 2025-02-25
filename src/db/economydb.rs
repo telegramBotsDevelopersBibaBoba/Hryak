@@ -31,7 +31,7 @@ pub async fn sub_money(pool: &MySqlPool, user_id: u64, money: f64) -> anyhow::Re
     println!("{balance}, {}", money);
 
     if balance < money {
-        return Err(anyhow!("not enough money"));
+        return Err(anyhow!("Недостаточно денег"));
     }
 
     sqlx::query("UPDATE bank SET balance = balance - ? WHERE user_id = ?")

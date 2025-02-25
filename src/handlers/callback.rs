@@ -1,8 +1,11 @@
 use std::{str::FromStr, time::Duration};
 
+use crate::{
+    config::consts,
+    controllers::{shop::Offer, user},
+};
 use anyhow::anyhow;
 use futures::FutureExt;
-use crate::{config::consts, controllers::{shop::Offer, user}};
 
 use sqlx::MySqlPool;
 use teloxide::{
@@ -14,15 +17,17 @@ use teloxide::{
 use tokio::time::sleep;
 
 use crate::{
-    config::commands::CallbackCommands, controllers::{pig::proccess_duel_results, shop::OfferType}, db::{pigdb, shopdb, economydb},
+    config::commands::CallbackCommands,
+    controllers::{pig::proccess_duel_results, shop::OfferType},
+    db::{economydb, pigdb, shopdb},
     deser_command,
 };
-
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub async fn filter_callback_commands(
     bot: Bot,
     q: CallbackQuery,
     pool: MySqlPool,
-) -> Result<(), RequestError> {
+) -> HandlerResult {
     // Called usually when you click on a button
     if q.data.is_none() {
         callback_error(&bot, &q).await.unwrap();
@@ -57,8 +62,12 @@ async fn callback_error(bot: &Bot, q: &CallbackQuery) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str], pool: &MySqlPool) -> anyhow::Result<()> {
-    
+async fn callback_shop(
+    bot: &Bot,
+    q: &CallbackQuery,
+    data: &[&str],
+    pool: &MySqlPool,
+) -> anyhow::Result<()> {
     // Todo finish you know
     // bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "cock")
     //     .text("fuckme")
@@ -77,12 +86,10 @@ async fn callback_shop(bot: &Bot, q: &CallbackQuery, data: &[&str], pool: &MySql
             }
             _ => "Недостаточно рупий",
         };
-        bot.answer_callback_query(&q.id)
-            .text(answer)
-            .await?;
+        bot.answer_callback_query(&q.id).text(answer).await?;
         Ok(())
     } else {
-        return Err(anyhow!("incorrect data {:?}", data))
+        return Err(anyhow!("incorrect data {:?}", data));
     }
 }
 

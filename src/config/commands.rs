@@ -13,12 +13,6 @@ pub enum InlineCommands {
     Duel,
     #[strum(serialize = "баланс", serialize = "balance")]
     Balance,
-
-    // Gambling
-    #[strum(serialize = "gamble", serialize = "азарт")]
-    Gamble,
-    #[strum(serialize = "guess", serialize = "угадывание")]
-    GuessGamble,
 }
 
 #[derive(Display, EnumString)]
@@ -42,8 +36,6 @@ pub enum CallbackCommands {
 pub enum FeedbackCommands {
     #[strum(serialize = "имя", serialize = "name")]
     ChangeName,
-    #[strum(serialize = "угадывание", serialize = "guess")]
-    GuessGamble,
 }
 
 #[derive(BotCommands, Clone)]

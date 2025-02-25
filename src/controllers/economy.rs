@@ -31,13 +31,13 @@ impl BankAccount {
         })
     }
 }
-
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub async fn economy_handle(
     bot: Bot,
     msg: Message,
     cmd: EconomyCommands,
     pool: MySqlPool,
-) -> ResponseResult<()> {
+) -> HandlerResult {
     match cmd {
         EconomyCommands::DailyIncome => {
             let (income_total, last_income) =

@@ -9,22 +9,18 @@ use teloxide::{
 };
 
 use crate::{
-    config::commands::FeedbackCommands,
-    controllers::gambling::{self, GuessDialogue, GuessState},
-    db::pigdb,
-    deser_command,
+    config::commands::FeedbackCommands, controllers::gambling::GuessState, db::pigdb, deser_command,
 };
-
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub async fn filter_inline_chosen_command(
     // Called when you click on a query
     bot: Bot,
     q: ChosenInlineResult,
     pool: MySqlPool,
-    dialogue: Dialogue<GuessState, InMemStorage<GuessState>>,
-) -> bool {
+) -> HandlerResult {
     println!("sdfkjsdklfsdjklsdfkjl;ds");
     if q.query.is_empty() {
-        return true;
+        return Ok(());
     }
     let args = deser_command!(q.query);
 
@@ -33,16 +29,15 @@ pub async fn filter_inline_chosen_command(
             FeedbackCommands::ChangeName => {
                 feedback_rename_hryak(bot, &q, &args[1..], &pool).boxed() // args are <new_name>
             }
-            FeedbackCommands::GuessGamble => feedback_guess_game(bot, &q, dialogue).boxed(),
         },
-        Err(_) => return true, // If it's not any command it's just better to skip it (return Ok) since it may have not been intended to come here
+        Err(_) => return Ok(()), // If it's not any command it's just better to skip it (return Ok) since it may have not been intended to come here
     };
 
     let resp = function.await;
     if let Err(why) = resp {
         println!("{}", why);
     }
-    true
+    Ok(())
 }
 
 async fn feedback_rename_hryak(
@@ -61,8 +56,7 @@ async fn feedback_rename_hryak(
 async fn feedback_guess_game(
     bot: Bot,
     q: &ChosenInlineResult,
-    dialogue: GuessDialogue,
+    dialogue: Dialogue<GuessState, InMemStorage<GuessState>>,
 ) -> anyhow::Result<()> {
-    dialogue.update(GuessState::Start).await?;
     Ok(())
 }

@@ -190,5 +190,4 @@ pub fn gamble_games_article() -> InlineQueryResultArticle {
     )
     .description("Посмотрите список доступных вам игр")
     .thumbnail_url("https://media.istockphoto.com/id/956025942/photo/newborn-piglet-on-spring-green-grass-on-a-farm.jpg?s=612x612&w=0&k=20&c=H01c3cbV4jozkEHvyathjQL1DtKx6mOd5s7NwACUJwA=".parse().unwrap())
-    .reply_markup(keyboard::make_gambling_game_keyboard())
 }

@@ -2,11 +2,13 @@ use std::{str::FromStr, time::Duration};
 
 use config::{commands, utils};
 
-use controllers::gambling::{self, GuessDialogue, GuessState};
+use controllers::gambling::{self, GambleComamnds, GuessDialogue, GuessState};
 use controllers::shop::{self, OfferType};
 use handlers::keyboard;
+use rand::{rng, Rng};
 use sqlx::MySqlPool;
-use teloxide::dispatching::dialogue::InMemStorage;
+use teloxide::dispatching::dialogue::{self, InMemStorage};
+use teloxide::dispatching::UpdateHandler;
 use teloxide::utils::command::BotCommands;
 use teloxide::{
     payloads::EditMessageText,
@@ -41,27 +43,7 @@ async fn main() {
 
     tokio::spawn(shop::generate_new_offers());
 
-    // Just boilerplate stuff
-    let handler = dptree::entry()
-        .branch(
-            Update::filter_inline_query().endpoint(handlers::inline_filter::filter_inline_commands), // TODO: split this in different inline handlers (if possible),
-        )
-        .branch(
-            Update::filter_callback_query().endpoint(handlers::callback::filter_callback_commands),
-        )
-        .branch(
-            Update::filter_chosen_inline_result()
-                .enter_dialogue::<Update, InMemStorage<GuessState>, GuessState>()
-                .filter_async(handlers::feedback::filter_inline_chosen_command)
-                .branch(dptree::case![GuessState::Start].endpoint(start))
-                .branch(dptree::case![GuessState::ReceiveBid].endpoint(get_bid)),
-        )
-        .branch(
-            Update::filter_message()
-                .filter_command::<commands::EconomyCommands>()
-                .endpoint(controllers::economy::economy_handle),
-        );
-    Dispatcher::builder(bot, handler)
+    Dispatcher::builder(bot, scheme())
         .dependencies(dptree::deps![pool, InMemStorage::<GuessState>::new()])
         .enable_ctrlc_handler()
         .build()
@@ -69,25 +51,38 @@ async fn main() {
         .await;
 }
 
-pub async fn start(bot: Bot, msg: Message, dialogue: GuessDialogue) -> ResponseResult<()> {
-    utils::send_msg(&bot, &msg, "Введи свою ставку:").await?;
-    dialogue.update(GuessState::ReceiveBid).await.unwrap();
+fn scheme() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let economy_commands = Update::filter_message()
+        .filter_command::<commands::EconomyCommands>()
+        .endpoint(controllers::economy::economy_handle);
 
-    Ok(())
-}
+    let callback_handler =
+        Update::filter_callback_query().endpoint(handlers::callback::filter_callback_commands);
 
-pub async fn get_bid(bot: Bot, msg: Message, dialogue: GuessDialogue) -> ResponseResult<()> {
-    match msg.text() {
-        Some(text) => {
-            utils::send_msg(&bot, &msg, "Введи загаданное число от 0 до 100").await?;
-            dialogue
-                .update(GuessState::ReceiveNumber {
-                    bid: text.parse::<f64>().unwrap(),
-                })
-                .await
-                .unwrap();
-        }
-        None => utils::send_msg(&bot, &msg, "Отправь число (например, 10.0)!").await?,
-    }
-    Ok(())
+    let inline_handler =
+        Update::filter_inline_query().endpoint(handlers::inline_filter::filter_inline_commands);
+
+    let feedback_handler = Update::filter_chosen_inline_result()
+        .endpoint(handlers::feedback::filter_inline_chosen_command);
+
+    let gamble_commands = teloxide::filter_command::<GambleComamnds, _>().branch(
+        dptree::case![GuessState::Start]
+            .branch(dptree::case![GambleComamnds::Guess].endpoint(gambling::guess_bid)),
+    );
+    let gamble_handler = Update::filter_message()
+        .branch(gamble_commands)
+        .branch(dptree::case![GuessState::ReceiveBid].endpoint(gambling::guess_number))
+        .branch(
+            dptree::case![GuessState::ReceiveNumber { bid }]
+                .endpoint(gambling::guess_number_entered),
+        );
+
+    let dialogue_handler =
+        dialogue::enter::<Update, InMemStorage<GuessState>, GuessState, _>().branch(gamble_handler);
+    dptree::entry()
+        .branch(economy_commands)
+        .branch(inline_handler)
+        .branch(callback_handler)
+        .branch(feedback_handler)
+        .branch(dialogue_handler)
 }

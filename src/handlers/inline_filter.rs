@@ -16,14 +16,10 @@ use teloxide::{
     types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
-pub async fn filter_inline_commands(
-    bot: Bot,
-    q: InlineQuery,
-    pool: MySqlPool,
-) -> Result<(), RequestError> {
+pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -> HandlerResult {
     // Called always
-
     if q.from.username.as_ref().is_none() {
         inline_error(
             bot,
@@ -70,10 +66,6 @@ pub async fn filter_inline_commands(
                     inline_duel(bot, &q, &pool, consts::DUEL_DEFAULT_BID).boxed()
                 }
                 InlineCommands::Balance => inline_balance(bot, &q, &pool).boxed(),
-
-                // Gambling
-                InlineCommands::Gamble => inline_gamble(bot, &q).boxed(),
-                InlineCommands::GuessGamble => inline_guess_game(bot, &q).boxed(),
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -206,15 +198,6 @@ async fn inline_balance(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::
 
 async fn inline_gamble(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
     let article = articles::gamble_games_article();
-    let articles = vec![article.into()];
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
-    Ok(())
-}
-
-async fn inline_guess_game(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
-    let article = articles::inline_guessing_game_article();
     let articles = vec![article.into()];
     bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
