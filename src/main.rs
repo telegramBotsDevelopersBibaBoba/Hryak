@@ -52,11 +52,9 @@ async fn main() {
         .branch(
             Update::filter_chosen_inline_result()
                 .enter_dialogue::<Update, InMemStorage<GuessState>, GuessState>()
-                .branch(dptree::case![GuessState::Start])
-                .endpoint(start)
-                .branch(dptree::case![GuessState::ReceiveBid])
-                .endpoint(get_bid)
-                .filter_async(handlers::feedback::filter_inline_chosen_command),
+                .filter_async(handlers::feedback::filter_inline_chosen_command)
+                .branch(dptree::case![GuessState::Start].endpoint(start))
+                .branch(dptree::case![GuessState::ReceiveBid].endpoint(get_bid)),
         )
         .branch(
             Update::filter_message()
