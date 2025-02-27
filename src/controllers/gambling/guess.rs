@@ -8,8 +8,9 @@ use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 use crate::config::utils;
 use crate::db::economydb;
 
-const BID_MULTIPLIER: f64 = 1.8;
+use super::HandlerResult;
 
+const GUESS_BID_MULTIPLIER: f64 = 1.8;
 #[derive(Clone, Default)]
 pub enum GuessState {
     #[default]
@@ -20,16 +21,6 @@ pub enum GuessState {
     },
 }
 pub type GuessDialogue = Dialogue<GuessState, InMemStorage<GuessState>>;
-
-#[derive(BotCommands, Clone)]
-pub enum GambleComamnds {
-    // #[command(parse_with = "split", aliases = ["pay"], description = "Перевести деньги кому-нибудь")]
-    // Guess { bid: f64, number: u8 },
-    #[command(aliases = ["guess"])]
-    Guess,
-}
-
-type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 pub async fn guess_bid(bot: Bot, msg: Message, dialogue: GuessDialogue) -> HandlerResult {
     utils::send_msg(&bot, &msg, "Введи свою ставку:").await?;
@@ -44,7 +35,6 @@ pub async fn guess_number(
     dialogue: GuessDialogue,
     pool: MySqlPool,
 ) -> HandlerResult {
-    todo!("Abstract into module");
     match msg.text() {
         Some(text) => {
             let bid = match text.parse::<f64>() {
@@ -141,8 +131,8 @@ pub async fn handle_guess_results(
         return Ok(answer_str);
     }
 
-    let answer_str = format!("Вы выиграли {}$", bid * BID_MULTIPLIER);
-    economydb::add_money(pool, user_id, bid * BID_MULTIPLIER).await?;
+    let answer_str = format!("Вы выиграли {}$", bid * GUESS_BID_MULTIPLIER);
+    economydb::add_money(pool, user_id, bid * GUESS_BID_MULTIPLIER).await?;
 
     Ok(answer_str)
 }

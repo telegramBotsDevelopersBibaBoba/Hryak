@@ -8,9 +8,7 @@ use teloxide::{
     RequestError,
 };
 
-use crate::{
-    config::commands::FeedbackCommands, controllers::gambling::GuessState, db::pigdb, deser_command,
-};
+use crate::{config::commands::FeedbackCommands, db::pigdb, deser_command};
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub async fn filter_inline_chosen_command(
     // Called when you click on a query
@@ -18,7 +16,6 @@ pub async fn filter_inline_chosen_command(
     q: ChosenInlineResult,
     pool: MySqlPool,
 ) -> HandlerResult {
-    println!("sdfkjsdklfsdjklsdfkjl;ds");
     if q.query.is_empty() {
         return Ok(());
     }
@@ -50,13 +47,5 @@ async fn feedback_rename_hryak(
         return Err(anyhow!("Rename hryak args are emtpy"));
     }
     pigdb::set_pig_name(pool, &args[0], q.from.id.0).await?;
-    Ok(())
-}
-
-async fn feedback_guess_game(
-    bot: Bot,
-    q: &ChosenInlineResult,
-    dialogue: Dialogue<GuessState, InMemStorage<GuessState>>,
-) -> anyhow::Result<()> {
     Ok(())
 }
