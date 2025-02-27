@@ -27,7 +27,9 @@ impl fmt::Display for RacePig {
         write!(
             f,
             "Имя: {} | Скорость: {} | Выносливость: {}",
-            self.name, self.speed, self.stamina
+            self.name,
+            self.speed.ceil(),
+            self.stamina.ceil()
         )
     }
 }
@@ -105,7 +107,7 @@ pub async fn race_receive_bid(
             let pigs = vec![pig_first, pig_second, pig_third, pig_fourth, pig_fifth];
             let mut msg_str = String::new();
             for (id, pig) in pigs.iter().enumerate() {
-                msg_str += &format!("{}. {}\n", id, pig.to_string());
+                msg_str += &format!("{}. {}\n", id + 1, pig.to_string());
             }
             msg_str += "Выбери свинью по номеру:";
             utils::send_msg(&bot, &msg, &msg_str).await?;
@@ -159,7 +161,7 @@ pub async fn race_receive_number(
                     let mut stage_progress = pig.speed * random_factor;
 
                     // Штраф за усталость: чем ниже выносливость, тем больше снижение
-                    let stamina_factor = pig.stamina as f32 / 10.0 as f32; // Нормализуем (предположим, stamina от 0 до 10)
+                    let stamina_factor = pig.stamina as f32 / 5.0 as f32; // Нормализуем (предположим, stamina от 0 до 10)
                     let fatigue =
                         (stages as f32 - stage as f32 + 1.0) * (1.0 - stamina_factor) * 0.1;
                     stage_progress -= fatigue.max(0.0); // Усталость снижает прогресс
@@ -188,21 +190,23 @@ pub async fn race_receive_number(
             // Проверяем ставку пользователя
             let user_chose_winner = chosen_id as usize - 1 == winner_idx;
             let result_msg = if user_chose_winner {
-                let winnings = bid * 2.5; // Коэффициент выигрыша
-                                          // Здесь можно обновить баланс в базе данных (pool)
-                format!("Победила свинья {}! Ты выиграл {}!", winner.name, winnings)
-            } else {
+                let winnings = bid * RACE_BID_MULTIPLIER; // Коэффициент выигрыша
+                                                          // Здесь можно обновить баланс в базе данных (pool)
+                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings).await?;
                 format!(
-                    "Победила свинья {}! Ты проиграл ставку {}.",
+                    "Победила свинья {}! Ты выиграл {}!",
+                    winner.name,
+                    winnings.floor()
+                )
+            } else {
+                economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await?;
+                format!(
+                    "Победила свинья {}! Ты проиграл ставку {}$.",
                     winner.name, bid
                 )
             };
             dialogue.exit().await?;
-            // Отправляем итоговое сообщение
             utils::send_msg(&bot, &msg, &result_msg).await?;
-
-            // Здесь можно добавить запись результата в базу данных через pool
-            // TODO
         }
         None => {
             utils::send_msg(&bot, &msg, &format!("Введите число от 1 до {}", pigs.len())).await?;

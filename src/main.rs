@@ -78,25 +78,25 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
         .filter_async(controllers::general::handle_other)
         .endpoint(handlers::feedback::filter_inline_chosen_command);
 
-    let gamble_commands = teloxide::filter_command::<GambleCommands, _>()
-        .branch(
-            dptree::case![GuessState::Start]
-                .branch(dptree::case![GambleCommands::Guess].endpoint(gambling::guess::guess_bid)),
-        )
-        .branch(
-            dptree::case![PigRaceState::Start]
-                .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
-        );
+    let guess_commands = teloxide::filter_command::<GambleCommands, _>().branch(
+        dptree::case![GuessState::Start]
+            .branch(dptree::case![GambleCommands::Guess].endpoint(gambling::guess::guess_bid)),
+    );
+
+    let race_commands = teloxide::filter_command::<GambleCommands, _>().branch(
+        dptree::case![PigRaceState::Start]
+            .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
+    );
 
     let guess_handler = Update::filter_message()
-        .branch(gamble_commands)
+        .branch(guess_commands)
         .branch(dptree::case![GuessState::ReceiveBid].endpoint(gambling::guess::guess_number))
         .branch(
             dptree::case![GuessState::ReceiveNumber { bid }]
                 .endpoint(gambling::guess::guess_number_entered),
         );
     let pigrace_handler = Update::filter_message()
-        .branch(gamble_commands)
+        .branch(race_commands)
         .branch(
             dptree::case![PigRaceState::ReceiveBid].endpoint(gambling::pigrace::race_receive_bid),
         )
