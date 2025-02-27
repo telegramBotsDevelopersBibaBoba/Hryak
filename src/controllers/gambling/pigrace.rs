@@ -192,7 +192,8 @@ pub async fn race_receive_number(
             let result_msg = if user_chose_winner {
                 let winnings = bid * RACE_BID_MULTIPLIER; // Коэффициент выигрыша
                                                           // Здесь можно обновить баланс в базе данных (pool)
-                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings).await?;
+                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings - bid)
+                    .await?;
                 format!(
                     "Победила свинья {}! Ты выиграл {}$!",
                     winner.name,

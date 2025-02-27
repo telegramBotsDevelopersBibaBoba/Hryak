@@ -129,7 +129,7 @@ pub async fn handle_guess_results(
     }
 
     let answer_str = format!("Вы выиграли {}$", bid * GUESS_BID_MULTIPLIER);
-    economydb::add_money(pool, user_id, bid * GUESS_BID_MULTIPLIER).await?;
+    economydb::add_money(pool, user_id, bid * GUESS_BID_MULTIPLIER - bid).await?;
 
     Ok(answer_str)
 }
