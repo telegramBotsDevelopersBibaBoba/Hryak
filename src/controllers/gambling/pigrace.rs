@@ -13,7 +13,7 @@ use crate::{config::utils, db::economydb};
 
 use super::HandlerResult;
 
-const RACE_BID_MULTIPLIER: f64 = 2.3;
+const RACE_BID_MULTIPLIER: f64 = 1.3;
 
 #[derive(Clone)]
 pub struct RacePig {
