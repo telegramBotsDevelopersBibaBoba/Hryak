@@ -87,7 +87,6 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
         dptree::case![PigRaceState::Start]
             .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
     );
-
     let guess_handler = Update::filter_message()
         .branch(guess_commands)
         .branch(dptree::case![GuessState::ReceiveBid].endpoint(gambling::guess::guess_number))
@@ -104,7 +103,6 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
             dptree::case![PigRaceState::ReceiveChosenPig { pigs, bid }]
                 .endpoint(gambling::pigrace::race_receive_number),
         );
-
     let guess_dialogue =
         dialogue::enter::<Update, InMemStorage<GuessState>, GuessState, _>().branch(guess_handler);
     let pigrace_dialogue = dialogue::enter::<Update, InMemStorage<PigRaceState>, PigRaceState, _>()
