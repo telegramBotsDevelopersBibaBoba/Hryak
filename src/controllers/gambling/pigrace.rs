@@ -194,7 +194,7 @@ pub async fn race_receive_number(
                                                           // Здесь можно обновить баланс в базе данных (pool)
                 economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings).await?;
                 format!(
-                    "Победила свинья {}! Ты выиграл {}!",
+                    "Победила свинья {}! Ты выиграл {}$!",
                     winner.name,
                     winnings.floor()
                 )
