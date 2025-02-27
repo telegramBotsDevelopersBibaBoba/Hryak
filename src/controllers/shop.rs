@@ -261,3 +261,69 @@ pub async fn generate_new_offers() {
     thread::sleep(Duration::from_secs(86400));
     println!("Stopped sleeping");
 }
+
+pub mod inline {
+    use sqlx::MySqlPool;
+    use teloxide::{
+        payloads::AnswerInlineQuerySetters,
+        prelude::Requester,
+        types::{InlineQuery, InlineQueryResult},
+        Bot,
+    };
+
+    use crate::handlers::articles;
+
+    pub async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+        let shop = articles::inline_shop_article(q, pool).await?;
+
+        let articles = vec![InlineQueryResult::Article(shop)];
+
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
+        Ok(())
+    }
+}
+
+pub mod callback {
+    use anyhow::anyhow;
+    use sqlx::MySqlPool;
+    use teloxide::{
+        payloads::AnswerCallbackQuerySetters, prelude::Requester, types::CallbackQuery, Bot,
+    };
+
+    use crate::db::economydb;
+
+    use super::OfferType;
+
+    pub async fn callback_shop(
+        bot: &Bot,
+        q: &CallbackQuery,
+        data: &[&str],
+        pool: &MySqlPool,
+    ) -> anyhow::Result<()> {
+        // Todo finish you know
+        // bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "cock")
+        //     .text("fuckme")
+        //     .reply_markup(make_shop())
+        //     .await?;
+
+        if let [offer_type, offer_id] = *data {
+            let offer_type = OfferType::from(offer_type);
+            let offer_id = offer_id.parse().unwrap();
+            let user_id = q.from.id.0;
+
+            let answer = match economydb::try_to_buy(pool, user_id, offer_id, offer_type).await {
+                Ok(item) => {
+                    item.use_item(user_id, pool).await?;
+                    "Успех"
+                }
+                _ => "Недостаточно рупий",
+            };
+            bot.answer_callback_query(&q.id).text(answer).await?;
+            Ok(())
+        } else {
+            return Err(anyhow!("incorrect data {:?}", data));
+        }
+    }
+}

@@ -13,6 +13,8 @@ pub enum InlineCommands {
     Duel,
     #[strum(serialize = "баланс", serialize = "balance")]
     Balance,
+    #[strum(serialize = "азарт", serialize = "gamble")]
+    Gamble,
 }
 
 #[derive(Display, EnumString)]

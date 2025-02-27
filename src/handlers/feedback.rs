@@ -8,8 +8,8 @@ use teloxide::{
     RequestError,
 };
 
-use crate::{config::commands::FeedbackCommands, db::pigdb, deser_command};
-type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+use crate::{config::commands::FeedbackCommands, controllers, db::pigdb, deser_command};
+type HandlerResult = anyhow::Result<()>;
 pub async fn filter_inline_chosen_command(
     // Called when you click on a query
     bot: Bot,
@@ -24,7 +24,8 @@ pub async fn filter_inline_chosen_command(
     let function = match FeedbackCommands::from_str(args[0]) {
         Ok(com) => match com {
             FeedbackCommands::ChangeName => {
-                feedback_rename_hryak(bot, &q, &args[1..], &pool).boxed() // args are <new_name>
+                controllers::pig::feedback::feedback_rename_hryak(bot, &q, &args[1..], &pool)
+                    .boxed() // args are <new_name>
             }
         },
         Err(_) => return Ok(()), // If it's not any command it's just better to skip it (return Ok) since it may have not been intended to come here
@@ -34,18 +35,5 @@ pub async fn filter_inline_chosen_command(
     if let Err(why) = resp {
         println!("{}", why);
     }
-    Ok(())
-}
-
-async fn feedback_rename_hryak(
-    bot: Bot,
-    q: &ChosenInlineResult,
-    args: &[&str],
-    pool: &MySqlPool,
-) -> anyhow::Result<()> {
-    if args.is_empty() {
-        return Err(anyhow!("Rename hryak args are emtpy"));
-    }
-    pigdb::set_pig_name(pool, &args[0], q.from.id.0).await?;
     Ok(())
 }

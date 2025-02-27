@@ -185,7 +185,7 @@ pub fn gamble_games_article() -> InlineQueryResultArticle {
         "gambling",
         "Список доступных азартных игр",
         InputMessageContent::Text(InputMessageContentText::new(
-            "Посмотрите список доступных игр..todo all games",
+            "Посмотрите список доступных игр:\n/guess - угадывание числа. При использовании команды начинается диалог, где вы сначала указываете ставку, потом выбираете число",
         )),
     )
     .description("Посмотрите список доступных вам игр")

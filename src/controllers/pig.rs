@@ -58,3 +58,72 @@ pub async fn proccess_duel_results(
     economydb::sub_money(pool, loser_id, bid).await?;
     Ok(())
 }
+
+pub mod inline {
+    use sqlx::MySqlPool;
+    use teloxide::{
+        payloads::AnswerInlineQuerySetters,
+        prelude::Requester,
+        types::{InlineQuery, InlineQueryResult},
+        Bot,
+    };
+
+    use crate::handlers::articles;
+
+    pub async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow::Result<()> {
+        let changename = articles::inline_change_name_article(data);
+
+        let articles = vec![InlineQueryResult::Article(changename)];
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn inline_name(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
+        let name = articles::inline_name_article();
+
+        let articles = vec![InlineQueryResult::Article(name)];
+
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn inline_hryak_info(
+        bot: Bot,
+        q: &InlineQuery,
+        pool: &MySqlPool,
+    ) -> anyhow::Result<()> {
+        let hryak =
+            articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
+
+        let articles = vec![InlineQueryResult::Article(hryak)];
+
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?; // Showing all suitable inline buttons
+        Ok(())
+    }
+}
+
+pub mod feedback {
+    use sqlx::MySqlPool;
+    use teloxide::{types::ChosenInlineResult, Bot};
+
+    use crate::db::pigdb;
+
+    pub async fn feedback_rename_hryak(
+        bot: Bot,
+        q: &ChosenInlineResult,
+        args: &[&str],
+        pool: &MySqlPool,
+    ) -> anyhow::Result<()> {
+        if args.is_empty() {
+            return Err(anyhow::anyhow!("Rename hryak args are emtpy"));
+        }
+        pigdb::set_pig_name(pool, &args[0], q.from.id.0).await?;
+        Ok(())
+    }
+}

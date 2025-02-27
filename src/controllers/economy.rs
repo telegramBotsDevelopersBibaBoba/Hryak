@@ -31,7 +31,7 @@ impl BankAccount {
         })
     }
 }
-type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+type HandlerResult = anyhow::Result<()>;
 pub async fn economy_handle(
     bot: Bot,
     msg: Message,
@@ -41,9 +41,7 @@ pub async fn economy_handle(
     match cmd {
         EconomyCommands::DailyIncome => {
             let (income_total, last_income) =
-                economydb::get_daily_income(&pool, msg.from.as_ref().unwrap().id.0)
-                    .await
-                    .unwrap();
+                economydb::get_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await?;
 
             if let Err(why) =
                 economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await
@@ -67,9 +65,8 @@ pub async fn economy_handle(
         EconomyCommands::Pay { mention, amount } => {
             let mention: String = mention.chars().skip(1).collect();
             println!("Args: {} {}", mention, amount);
-            let balance_host = economydb::get_balance(&pool, msg.from.as_ref().unwrap().id.0)
-                .await
-                .unwrap();
+            let balance_host =
+                economydb::get_balance(&pool, msg.from.as_ref().unwrap().id.0).await?;
             if balance_host < amount {
                 todo!("Send error message not enogu money");
             }
@@ -77,23 +74,40 @@ pub async fn economy_handle(
             let receiver_id = match userdb::id_by_username(&pool, &mention).await {
                 Ok(id) => id as u64,
                 Err(_) => {
-                    utils::send_msg(&bot, &msg, "Адресата не существует. Попробуйте позже")
-                        .await
-                        .unwrap();
+                    utils::send_msg(&bot, &msg, "Адресата не существует. Попробуйте позже").await?;
                     return Ok(());
                 }
             };
 
-            economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount)
-                .await
-                .unwrap();
-            economydb::add_money(&pool, receiver_id, amount)
-                .await
-                .unwrap(); // Shall not fail because why would it fail
+            economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount).await?;
+            economydb::add_money(&pool, receiver_id, amount).await?;
 
             utils::send_msg(&bot, &msg, &format!("Вы успешно перевели {}$", amount)).await?;
             return Ok(());
         }
     }
     Ok(())
+}
+
+pub mod inline {
+    use sqlx::MySqlPool;
+    use teloxide::{
+        payloads::AnswerInlineQuerySetters,
+        prelude::Requester,
+        types::{InlineQuery, InlineQueryResult},
+        Bot,
+    };
+
+    use crate::handlers::articles;
+
+    pub async fn inline_balance(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+        let balance_article = articles::inline_balance_article(pool, q.from.id.0).await?;
+
+        let articles = vec![InlineQueryResult::Article(balance_article)];
+
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
+        Ok(())
+    }
 }

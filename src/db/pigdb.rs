@@ -82,7 +82,7 @@ pub async fn increase_attack(
 }
 
 pub async fn increase_defense(pool: &MySqlPool, add_def: f64, user_id: u64) -> anyhow::Result<()> {
-    sqlx::query("UPDATE pigs SET attack = attack + ? WHERE user_id = ?")
+    sqlx::query("UPDATE pigs SET defense = defense + ? WHERE user_id = ?")
         .bind(add_def)
         .bind(user_id)
         .execute(pool)

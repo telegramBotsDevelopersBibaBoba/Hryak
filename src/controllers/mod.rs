@@ -1,3 +1,4 @@
+pub mod duel;
 pub mod economy;
 pub mod gambling;
 pub mod general;

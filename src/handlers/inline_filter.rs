@@ -3,6 +3,7 @@ use std::str::FromStr;
 use crate::config::commands::InlineAdvCommands;
 use crate::config::commands::InlineCommands;
 use crate::config::consts;
+use crate::controllers;
 use crate::controllers::user;
 use crate::db::pigdb;
 use crate::db::userdb;
@@ -16,29 +17,9 @@ use teloxide::{
     types::{InlineQuery, InlineQueryResult},
     Bot, RequestError,
 };
-type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+type HandlerResult = anyhow::Result<()>;
 
 pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -> HandlerResult {
-    // Called always
-    if q.from.username.as_ref().is_none() {
-        inline_error(
-            bot,
-            &q,
-            "Не найдено имя пользователя. Без него бот работает некорректно",
-            "Имя пользователя можно добавить в настройках аккаунта",
-        )
-        .await
-        .unwrap();
-        return Ok(());
-    }
-
-    if !userdb::user_exists(&pool, q.from.id.0).await {
-        user::create_user(&pool, q.from.id.0, "None").await.unwrap();
-    }
-    userdb::set_username(&pool, q.from.username.as_ref().unwrap(), q.from.id.0)
-        .await
-        .unwrap();
-
     let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
     let command_data = &q.query.split_once(" ");
 
@@ -46,26 +27,38 @@ pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -
     let function = match command_data {
         Some((command_str, data)) => match InlineAdvCommands::from_str(command_str) {
             Ok(command) => match command {
-                InlineAdvCommands::ChangeName => inline_change_name(bot, &q, data).boxed(),
+                InlineAdvCommands::ChangeName => {
+                    controllers::pig::inline::inline_change_name(bot, &q, data).boxed()
+                }
                 InlineAdvCommands::Duel => {
                     let bid = data
                         .trim()
                         .parse::<f64>()
                         .unwrap_or(consts::DUEL_DEFAULT_BID);
-                    inline_duel(bot, &q, &pool, bid).boxed()
+                    controllers::duel::inline::inline_duel(bot, &q, &pool, bid).boxed()
                 }
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
         None => match InlineCommands::from_str(command_str) {
             Ok(command) => match command {
-                InlineCommands::Hryak => inline_hryak_info(bot, &q, &pool).boxed(),
-                InlineCommands::Shop => inline_shop(bot, &q, &pool).boxed(),
-                InlineCommands::Name => inline_name(bot, &q).boxed(),
-                InlineCommands::Duel => {
-                    inline_duel(bot, &q, &pool, consts::DUEL_DEFAULT_BID).boxed()
+                InlineCommands::Hryak => {
+                    controllers::pig::inline::inline_hryak_info(bot, &q, &pool).boxed()
                 }
-                InlineCommands::Balance => inline_balance(bot, &q, &pool).boxed(),
+                InlineCommands::Shop => {
+                    controllers::shop::inline::inline_shop(bot, &q, &pool).boxed()
+                }
+                InlineCommands::Name => controllers::pig::inline::inline_name(bot, &q).boxed(),
+                InlineCommands::Duel => {
+                    controllers::duel::inline::inline_duel(bot, &q, &pool, consts::DUEL_DEFAULT_BID)
+                        .boxed()
+                }
+                InlineCommands::Balance => {
+                    controllers::economy::inline::inline_balance(bot, &q, &pool).boxed()
+                }
+                InlineCommands::Gamble => {
+                    controllers::gambling::inline::inline_gamble(bot, &q).boxed()
+                }
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -128,79 +121,5 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> any
     bot.answer_inline_query(&q.id, articles)
         .cache_time(0)
         .await?; // Showing all suitable inline buttons
-    Ok(())
-}
-
-async fn inline_hryak_info(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let hryak = articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
-
-    let articles = vec![InlineQueryResult::Article(hryak)];
-
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?; // Showing all suitable inline buttons
-    Ok(())
-}
-
-async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let shop = articles::inline_shop_article(q, pool).await?;
-
-    let articles = vec![InlineQueryResult::Article(shop)];
-
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
-    Ok(())
-}
-
-async fn inline_name(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
-    let name = articles::inline_name_article();
-
-    let articles = vec![InlineQueryResult::Article(name)];
-
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
-    Ok(())
-}
-
-async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow::Result<()> {
-    let changename = articles::inline_change_name_article(data);
-
-    let articles = vec![InlineQueryResult::Article(changename)];
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
-    Ok(())
-}
-
-async fn inline_duel(bot: Bot, q: &InlineQuery, pool: &MySqlPool, bid: f64) -> anyhow::Result<()> {
-    let duel =
-        articles::inline_duel_article(&pool, q.from.id.0, q.from.mention().unwrap(), bid).await?;
-    let articles = vec![InlineQueryResult::Article(duel)];
-
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
-    Ok(())
-}
-
-async fn inline_balance(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let balance_article = articles::inline_balance_article(pool, q.from.id.0).await?;
-
-    let articles = vec![InlineQueryResult::Article(balance_article)];
-
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
-    Ok(())
-}
-
-async fn inline_gamble(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
-    let article = articles::gamble_games_article();
-    let articles = vec![article.into()];
-    bot.answer_inline_query(&q.id, articles)
-        .cache_time(0)
-        .await?;
     Ok(())
 }

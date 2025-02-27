@@ -24,7 +24,7 @@ pub type GuessDialogue = Dialogue<GuessState, InMemStorage<GuessState>>;
 
 pub async fn guess_bid(bot: Bot, msg: Message, dialogue: GuessDialogue) -> HandlerResult {
     utils::send_msg(&bot, &msg, "Введи свою ставку:").await?;
-    dialogue.update(GuessState::ReceiveBid).await.unwrap();
+    dialogue.update(GuessState::ReceiveBid).await?;
 
     Ok(())
 }
@@ -51,15 +51,12 @@ pub async fn guess_number(
                 .unwrap_or(0.0);
             if balance < bid {
                 utils::send_msg(&bot, &msg, "Недостаточно денег!").await?;
-                dialogue.exit().await.unwrap();
+                dialogue.exit().await?;
                 return Ok(());
             }
 
             utils::send_msg(&bot, &msg, "Введи загаданное число от 0 до 100").await?;
-            dialogue
-                .update(GuessState::ReceiveNumber { bid })
-                .await
-                .unwrap();
+            dialogue.update(GuessState::ReceiveNumber { bid }).await?;
         }
         None => utils::send_msg(&bot, &msg, "Отправь число (например, 10.0)!").await?,
     }
@@ -88,12 +85,12 @@ pub async fn guess_number_entered(
             {
                 Ok(result_str) => {
                     utils::send_msg(&bot, &msg, &result_str).await?;
-                    dialogue.exit().await.unwrap();
+                    dialogue.exit().await?;
                 }
                 Err(why) => {
                     eprintln!("{}", why);
                     utils::send_msg(&bot, &msg, "Произошла ошибка. Пошелнаху").await?;
-                    dialogue.exit().await.unwrap();
+                    dialogue.exit().await?;
                     return Ok(());
                 }
             }
