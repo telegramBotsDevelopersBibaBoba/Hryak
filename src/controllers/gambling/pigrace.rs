@@ -47,7 +47,7 @@ pub enum PigRaceState {
 pub type PigRaceDialogue = Dialogue<PigRaceState, InMemStorage<PigRaceState>>;
 
 pub async fn race_bid(bot: Bot, msg: Message, dialogue: PigRaceDialogue) -> HandlerResult {
-    utils::send_msg(&bot, &msg, "Введи ставку:").await?;
+    utils::send_msg(&bot, &msg, "Введи свою ставку (Нужно ответить на сообщение):\nВведите отмена|cancel, чтобы прекратить выполнение команды досрочно").await?;
     dialogue.update(PigRaceState::ReceiveBid).await?;
     Ok(())
 }
@@ -60,6 +60,11 @@ pub async fn race_receive_bid(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+                utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
+                dialogue.exit().await?;
+                return Ok(());
+            }
             let bid = match text.parse::<f64>() {
                 Ok(num) => num,
                 Err(why) => {
@@ -131,6 +136,12 @@ pub async fn race_receive_number(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+                utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
+                dialogue.exit().await?;
+                return Ok(());
+            }
+
             let chosen_id = match text.trim().parse::<u8>() {
                 Ok(id) => id,
                 Err(why) => {

@@ -23,7 +23,7 @@ pub enum GuessState {
 pub type GuessDialogue = Dialogue<GuessState, InMemStorage<GuessState>>;
 
 pub async fn guess_bid(bot: Bot, msg: Message, dialogue: GuessDialogue) -> HandlerResult {
-    utils::send_msg(&bot, &msg, "Введи свою ставку:").await?;
+    utils::send_msg(&bot, &msg, "Введи свою ставку (Нужно ответить на сообщение):\nВведите отмена|cancel на любое из сообщений, чтобы прекратить выполнение команды досрочно").await?;
     dialogue.update(GuessState::ReceiveBid).await?;
 
     Ok(())
@@ -37,6 +37,11 @@ pub async fn guess_number(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+                utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
+                dialogue.exit().await?;
+                return Ok(());
+            }
             let bid = match text.parse::<f64>() {
                 Ok(bid) => bid,
                 Err(why) => {
@@ -72,6 +77,12 @@ pub async fn guess_number_entered(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+                utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
+                dialogue.exit().await?;
+                return Ok(());
+            }
+
             let guessed_number = match text.parse::<u8>() {
                 Ok(num) => num,
                 Err(why) => {
