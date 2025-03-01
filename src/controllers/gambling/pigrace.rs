@@ -11,7 +11,7 @@ use teloxide::{dispatching::dialogue::InMemStorage, types::Message, Bot};
 
 use crate::{config::utils, db::economydb};
 
-use super::HandlerResult;
+use super::{should_cancel_dialog, HandlerResult};
 
 const RACE_BID_MULTIPLIER: f64 = 1.3;
 
@@ -60,7 +60,7 @@ pub async fn race_receive_bid(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
-            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+            if should_cancel_dialog(text) {
                 utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
                 dialogue.exit().await?;
                 return Ok(());
@@ -136,7 +136,7 @@ pub async fn race_receive_number(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
-            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+            if should_cancel_dialog(text) {
                 utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
                 dialogue.exit().await?;
                 return Ok(());

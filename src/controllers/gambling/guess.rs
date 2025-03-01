@@ -8,7 +8,7 @@ use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 use crate::config::utils;
 use crate::db::economydb;
 
-use super::HandlerResult;
+use super::{should_cancel_dialog, HandlerResult};
 
 const GUESS_BID_MULTIPLIER: f64 = 1.8;
 #[derive(Clone, Default)]
@@ -37,7 +37,7 @@ pub async fn guess_number(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
-            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+            if should_cancel_dialog(text) {
                 utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
                 dialogue.exit().await?;
                 return Ok(());
@@ -77,7 +77,7 @@ pub async fn guess_number_entered(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
-            if text.to_lowercase() == "отмена" || text.to_lowercase() == "cancel" {
+            if should_cancel_dialog(text) {
                 utils::send_msg(&bot, &msg, "Диалог остановлен").await?;
                 dialogue.exit().await?;
                 return Ok(());

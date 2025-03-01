@@ -9,6 +9,13 @@ pub enum GambleCommands {
 }
 type HandlerResult = anyhow::Result<()>;
 
+pub fn should_cancel_dialog(text: &str) -> bool {
+    text.to_lowercase() == "отмена"
+        || text.to_lowercase() == "cancel"
+        || text.to_lowercase() == "отменить"
+        || text.to_lowercase() == "стоп"
+}
+
 pub mod inline {
     use teloxide::{
         payloads::AnswerInlineQuerySetters, prelude::Requester, types::InlineQuery, Bot,
