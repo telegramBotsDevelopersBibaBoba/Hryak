@@ -75,20 +75,11 @@ pub mod callback {
             return Ok(());
         }
 
-        if !pigdb::pig_exists(pool, part_id).await {
-            bot.answer_callback_query(&q.id)
-                .text("У тебя нет свиньи! Подуэлиться не получиться.\nИспользуй бота, чтобы она создалась автоматически")
-                .send()
-                .await?;
-
-            return Ok(());
-        }
-
         let bid = data[2]
             .trim()
             .parse::<f64>()
             .unwrap_or(consts::DUEL_DEFAULT_BID);
-        let part_balance = economydb::get_balance(pool, part_id).await?;
+        let part_balance = economydb::balance(pool, part_id).await?;
         if part_balance < bid {
             bot.answer_callback_query(&q.id)
                 .text("Недостаточно денег!")
@@ -113,8 +104,8 @@ pub mod callback {
         .send()
         .await?;
 
-        let pig_first = pigdb::get_pig_by_user_id(pool, host_id).await?;
-        let pig_second = pigdb::get_pig_by_user_id(pool, part_id).await?;
+        let pig_first = pigdb::pig_by_userid(pool, host_id).await?;
+        let pig_second = pigdb::pig_by_userid(pool, part_id).await?;
 
         sleep(Duration::from_secs(1)).await;
 

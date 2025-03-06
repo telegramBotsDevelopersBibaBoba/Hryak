@@ -45,7 +45,7 @@ impl Pig {
 }
 
 pub async fn get_pig(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
-    return pigdb::get_pig_by_user_id(pool, user_id).await;
+    return pigdb::pig_by_userid(pool, user_id).await;
 }
 
 pub async fn proccess_duel_results(
@@ -85,9 +85,7 @@ pub mod inline {
 
         let articles = vec![InlineQueryResult::Article(name)];
 
-        bot.answer_inline_query(&q.id, articles)
-            .cache_time(0)
-            .await?;
+        bot.answer_inline_query(&q.id, articles).await?;
         Ok(())
     }
 
@@ -96,8 +94,7 @@ pub mod inline {
         q: &InlineQuery,
         pool: &MySqlPool,
     ) -> anyhow::Result<()> {
-        let hryak =
-            articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
+        let hryak = articles::inline_hryak_info_article(pool, q.from.id.0).await?;
 
         let articles = vec![InlineQueryResult::Article(hryak)];
 
@@ -123,7 +120,7 @@ pub mod feedback {
         if args.is_empty() {
             return Err(anyhow::anyhow!("Rename hryak args are emtpy"));
         }
-        pigdb::set_pig_name(pool, &args[0], q.from.id.0).await?;
+        pigdb::set_name(pool, &args[0], q.from.id.0).await?;
         Ok(())
     }
 }

@@ -4,21 +4,20 @@ use teloxide::types::{
 };
 
 use crate::controllers::{pig, shop};
-use crate::db::pigdb::get_pig_by_user_id;
-use crate::db::{economydb, userdb};
+
+use crate::db::economydb;
 use crate::handlers::keyboard;
 
 use super::keyboard::make_duel;
 
 pub async fn inline_hryak_info_article(
     pool: &MySqlPool,
-    username: &Option<String>,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let pig = pig::get_pig(pool, user_id).await?;
 
     let hrundel_weight = make_article("hryak", "Узнать инфу о хряке",
-        &format!("Имя хряка: {}\nРазмер хряка: {} кг.", pig.name, pig.weight),
+        &format!("Имя хряка: {}\nРазмер хряка: {} кг\nАттака: {}, Защита: {}", pig.name, pig.weight, pig.attack, pig.defense),
         "Посмотрите подробную информацию о вашей свинке",
         "https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".into());
 
@@ -110,7 +109,7 @@ pub async fn inline_duel_article(
     duel_host_mention: String,
     bid: f64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
-    let user_balance = economydb::get_balance(pool, duel_host_id).await?;
+    let user_balance = economydb::balance(pool, duel_host_id).await?;
     if user_balance < bid {
         let message = "Недостаточно денег для создания дуэли!";
 
@@ -144,9 +143,13 @@ pub async fn inline_balance_article(
     pool: &MySqlPool,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
-    let balance = economydb::get_balance(pool, user_id).await?;
+    let balance = economydb::balance(pool, user_id).await?;
+    let daily_income = economydb::daily_income(pool, user_id).await?;
 
-    let message = format!("Ваш баланс: {}$\nХохлы пидоры", balance);
+    let message = format!(
+        "Ваш баланс: {}$\nВаш ежедневный доход: {}$",
+        balance, daily_income.0
+    );
 
     let balance_article = InlineQueryResultArticle::new(
         "balance",

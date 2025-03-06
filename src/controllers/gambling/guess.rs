@@ -1,8 +1,6 @@
 use rand::{rng, Rng};
 use sqlx::MySqlPool;
-use teloxide::macros::BotCommands;
 use teloxide::prelude::Dialogue;
-use teloxide::utils::command;
 use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 
 use crate::config::utils;
@@ -51,7 +49,7 @@ pub async fn guess_number(
                 }
             };
 
-            let balance = economydb::get_balance(&pool, msg.from.as_ref().unwrap().id.0)
+            let balance = economydb::balance(&pool, msg.from.as_ref().unwrap().id.0)
                 .await
                 .unwrap_or(0.0);
             if balance < bid {
@@ -110,14 +108,7 @@ pub async fn guess_number_entered(
     }
     Ok(())
 }
-pub async fn invalid_state(bot: Bot, msg: Message) -> HandlerResult {
-    bot.send_message(
-        msg.chat.id,
-        "Unable to handle the message. Type /help to see the usage.",
-    )
-    .await?;
-    Ok(())
-}
+
 pub async fn handle_guess_results(
     pool: &MySqlPool,
     bid: f64,

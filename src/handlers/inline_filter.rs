@@ -97,7 +97,7 @@ async fn inline_error(
 }
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
-    let hryak = articles::inline_hryak_info_article(pool, &q.from.username, q.from.id.0).await?;
+    let hryak = articles::inline_hryak_info_article(pool, q.from.id.0).await?;
     let duel = articles::inline_duel_article(
         pool,
         q.from.id.0,

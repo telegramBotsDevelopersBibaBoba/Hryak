@@ -11,7 +11,7 @@ pub async fn create_pig(pool: &MySqlPool, user_id: u64) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn pig_exists(pool: &MySqlPool, user_id: u64) -> bool {
+pub async fn exists(pool: &MySqlPool, user_id: u64) -> bool {
     match sqlx::query("SELECT * FROM pigs WHERE user_id = ?")
         .bind(user_id)
         .fetch_one(pool)
@@ -22,8 +22,8 @@ pub async fn pig_exists(pool: &MySqlPool, user_id: u64) -> bool {
     }
 }
 
-pub async fn get_pig_weight(pool: &MySqlPool, user_id: u64) -> anyhow::Result<f32> {
-    if !pig_exists(pool, user_id).await {
+pub async fn weight(pool: &MySqlPool, user_id: u64) -> anyhow::Result<f32> {
+    if !exists(pool, user_id).await {
         create_pig(pool, user_id).await?;
     }
 
@@ -37,7 +37,7 @@ pub async fn get_pig_weight(pool: &MySqlPool, user_id: u64) -> anyhow::Result<f3
     Ok(weight)
 }
 
-pub async fn get_pig_by_user_id(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
+pub async fn pig_by_userid(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
     let row = sqlx::query("SELECT * FROM pigs WHERE user_id = ?")
         .bind(user_id)
         .fetch_one(pool)
@@ -46,7 +46,7 @@ pub async fn get_pig_by_user_id(pool: &MySqlPool, user_id: u64) -> anyhow::Resul
     Pig::from_mysql_row(row)
 }
 
-pub async fn set_pig_name(pool: &MySqlPool, name: &str, user_id: u64) -> anyhow::Result<()> {
+pub async fn set_name(pool: &MySqlPool, name: &str, user_id: u64) -> anyhow::Result<()> {
     let name = if name.is_empty() { "Unnamed" } else { name };
     sqlx::query("UPDATE pigs SET name = ? WHERE user_id = ?")
         .bind(name)
@@ -57,7 +57,7 @@ pub async fn set_pig_name(pool: &MySqlPool, name: &str, user_id: u64) -> anyhow:
     Ok(())
 }
 
-pub async fn set_pig_weight(pool: &MySqlPool, new_weight: f64, user_id: u64) -> anyhow::Result<()> {
+pub async fn set_weight(pool: &MySqlPool, new_weight: f64, user_id: u64) -> anyhow::Result<()> {
     sqlx::query("UPDATE pigs SET weight = ? WHERE user_id = ?")
         .bind(new_weight)
         .bind(user_id)
@@ -91,7 +91,7 @@ pub async fn increase_defense(pool: &MySqlPool, add_def: f64, user_id: u64) -> a
     Ok(())
 }
 
-pub async fn feed_pig(pool: &MySqlPool, nutrition: f64, user_id: u64) -> anyhow::Result<()> {
+pub async fn feed(pool: &MySqlPool, nutrition: f64, user_id: u64) -> anyhow::Result<()> {
     let mass = nutrition / 1000.0;
 
     sqlx::query("UPDATE pigs SET weight = weight + ? WHERE user_id = ?")

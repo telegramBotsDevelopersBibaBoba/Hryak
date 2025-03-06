@@ -1,15 +1,18 @@
+use anyhow::anyhow;
 use sqlx::{
     mysql::MySqlRow,
     types::chrono::{DateTime, Utc},
     MySqlPool, Row,
 };
-use teloxide::{prelude::ResponseResult, types::Message, Bot};
+use teloxide::{types::Message, Bot};
 
-use crate::{config::utils, db::userdb};
 use crate::{
-    config::{commands::EconomyCommands, consts},
-    db::economydb,
+    config::commands::EconomyCommands,
+    db::{economydb, shopdb},
 };
+use crate::{config::utils, db::userdb};
+
+use super::shop::{Offer, OfferType};
 
 pub struct BankAccount {
     balance: f64,
@@ -41,10 +44,9 @@ pub async fn economy_handle(
     match cmd {
         EconomyCommands::DailyIncome => {
             let (income_total, last_income) =
-                economydb::get_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await?;
+                economydb::daily_income(&pool, msg.from.as_ref().unwrap().id.0).await?;
 
-            if let Err(why) =
-                economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await
+            if let Err(_) = economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await
             {
                 let message = format!(
                     "<a href=\"tg://user?id={}\">{}</a>, рано! Подождите еще {} часов.",
@@ -65,13 +67,12 @@ pub async fn economy_handle(
         EconomyCommands::Pay { mention, amount } => {
             let mention: String = mention.chars().skip(1).collect();
             println!("Args: {} {}", mention, amount);
-            let balance_host =
-                economydb::get_balance(&pool, msg.from.as_ref().unwrap().id.0).await?;
+            let balance_host = economydb::balance(&pool, msg.from.as_ref().unwrap().id.0).await?;
             if balance_host < amount {
                 todo!("Send error message not enogu money");
             }
             println!("here");
-            let receiver_id = match userdb::id_by_username(&pool, &mention).await {
+            let receiver_id = match userdb::id(&pool, &mention).await {
                 Ok(id) => id as u64,
                 Err(_) => {
                     utils::send_msg(&bot, &msg, "Адресата не существует. Попробуйте позже").await?;
@@ -109,5 +110,28 @@ pub mod inline {
             .cache_time(0)
             .await?;
         Ok(())
+    }
+}
+
+pub async fn try_to_buy(
+    pool: &MySqlPool,
+    user_id: u64,
+    offer_id: u64,
+    offer_type: OfferType,
+) -> anyhow::Result<Offer> {
+    let offer = match offer_type {
+        OfferType::Food => Offer::Food(shopdb::food_offer(pool, offer_id).await?),
+        OfferType::Improvement => {
+            Offer::Improvement(shopdb::improvement_offer(pool, offer_id).await?)
+        }
+        OfferType::Buff => Offer::Buff(shopdb::buff_offer(pool, offer_id).await?),
+    };
+
+    match economydb::sub_money(pool, user_id, offer.get_price()).await {
+        Ok(_) => Ok(offer),
+        Err(why) => {
+            println!("{why}");
+            Err(anyhow!("Not enough money"))
+        }
     }
 }

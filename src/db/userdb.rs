@@ -1,8 +1,5 @@
-use crate::db::pigdb;
 use sqlx::MySqlPool;
 use sqlx::Row;
-
-use super::economydb;
 
 pub async fn create_user(pool: &MySqlPool, user_id: u64, username: &str) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO users (id, username) VALUES (?, ?)")
@@ -14,7 +11,7 @@ pub async fn create_user(pool: &MySqlPool, user_id: u64, username: &str) -> anyh
     Ok(())
 }
 
-pub async fn user_exists(pool: &MySqlPool, user_id: u64) -> bool {
+pub async fn exists(pool: &MySqlPool, user_id: u64) -> bool {
     match sqlx::query("SELECT id FROM users WHERE id = ?")
         .bind(user_id)
         .fetch_one(pool)
@@ -26,7 +23,7 @@ pub async fn user_exists(pool: &MySqlPool, user_id: u64) -> bool {
     }
 }
 
-pub async fn username_by_id(pool: &MySqlPool, user_id: u64) -> anyhow::Result<String> {
+pub async fn username(pool: &MySqlPool, user_id: u64) -> anyhow::Result<String> {
     let row = sqlx::query("SELECT username FROM users WHERE id = ?")
         .bind(user_id)
         .fetch_one(pool)
@@ -44,7 +41,7 @@ pub async fn set_username(pool: &MySqlPool, username: &str, user_id: u64) -> any
     Ok(())
 }
 
-pub async fn id_by_username(pool: &MySqlPool, username: &str) -> anyhow::Result<i64> {
+pub async fn id(pool: &MySqlPool, username: &str) -> anyhow::Result<i64> {
     let row = sqlx::query("SELECT id FROM users WHERE username = ?")
         .bind(username)
         .fetch_one(pool)

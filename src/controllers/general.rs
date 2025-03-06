@@ -23,7 +23,7 @@ pub async fn handle_message(bot: Bot, msg: Message, pool: MySqlPool) -> bool {
     let user_id = msg.from.as_ref().unwrap().id.0;
     let username = msg.from.as_ref().unwrap().username.as_ref().unwrap();
 
-    if !userdb::user_exists(&pool, user_id).await {
+    if !userdb::exists(&pool, user_id).await {
         user::create_user(&pool, user_id, "None").await.unwrap();
     }
     userdb::set_username(&pool, &username, user_id)
@@ -32,7 +32,7 @@ pub async fn handle_message(bot: Bot, msg: Message, pool: MySqlPool) -> bool {
     true
 }
 
-pub async fn handle_other(bot: Bot, update: Update, pool: MySqlPool) -> bool {
+pub async fn handle_other(_: Bot, update: Update, pool: MySqlPool) -> bool {
     if update.from().as_ref().unwrap().username.is_none() {
         println!("user doesnt have a nickname");
         return false;
@@ -40,7 +40,7 @@ pub async fn handle_other(bot: Bot, update: Update, pool: MySqlPool) -> bool {
     let user_id = update.from().as_ref().unwrap().id.0;
     let username = update.from().as_ref().unwrap().username.as_ref().unwrap();
 
-    if !userdb::user_exists(&pool, user_id).await {
+    if !userdb::exists(&pool, user_id).await {
         user::create_user(&pool, user_id, "None").await.unwrap()
     }
     userdb::set_username(&pool, &username, user_id)
@@ -66,7 +66,7 @@ pub async fn handle_inline(bot: Bot, q: InlineQuery, pool: MySqlPool) -> bool {
     let user_id = q.from.id.0;
     let username = q.from.username.as_ref().unwrap();
 
-    if !userdb::user_exists(&pool, user_id).await {
+    if !userdb::exists(&pool, user_id).await {
         user::create_user(&pool, user_id, "None").await.unwrap();
     }
     userdb::set_username(&pool, &username, user_id)

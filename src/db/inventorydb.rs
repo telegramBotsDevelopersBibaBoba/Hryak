@@ -2,9 +2,7 @@ use sqlx::MySqlPool;
 
 use crate::controllers::inventory::InventorySlot;
 
-use super::shopdb::get_usages_buff;
-
-pub async fn get_invslot_by_buffid(
+pub async fn invslot(
     pool: &MySqlPool,
     buff_id: u64,
     user_id: u64,
@@ -59,12 +57,12 @@ pub async fn set_item_usages(
     Ok(())
 }
 
-pub async fn add_item(pool: &MySqlPool, item_id: u64, user_id: u64) -> anyhow::Result<()> {
-    let usages = get_usages_buff(pool, item_id).await?;
-    if item_exists(pool, item_id, user_id).await {
-        increase_item_usages(pool, item_id, user_id, usages).await?;
-        return Ok(());
-    }
+pub async fn add_item(
+    pool: &MySqlPool,
+    item_id: u64,
+    user_id: u64,
+    usages: i32,
+) -> anyhow::Result<()> {
     sqlx::query("INSERT INTO inventory (user_id, item_id, usages) VALUES (?, ?, ?)")
         .bind(user_id)
         .bind(item_id)

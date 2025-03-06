@@ -12,6 +12,8 @@ use std::{
 };
 use teloxide::types::InlineKeyboardButton;
 
+use super::inventory;
+
 pub struct FoodOffer {
     id: i64,
     price: f64,
@@ -186,7 +188,7 @@ impl Offer {
 
     pub async fn use_item(&self, by_user: u64, pool: &MySqlPool) -> anyhow::Result<()> {
         match self {
-            Self::Food(item) => pigdb::feed_pig(pool, item.nutrition, by_user).await,
+            Self::Food(item) => pigdb::feed(pool, item.nutrition, by_user).await,
             Self::Improvement(item) => {
                 match item.improvement_type.as_str() {
                     "attack" => {
@@ -203,7 +205,7 @@ impl Offer {
                 return Ok(());
             }
             Self::Buff(item) => {
-                inventorydb::add_item(pool, item.id as u64, by_user).await?;
+                inventory::add_item(pool, item.id as u64, by_user).await?;
                 return Ok(());
             }
         }
@@ -278,9 +280,7 @@ pub mod inline {
 
         let articles = vec![InlineQueryResult::Article(shop)];
 
-        bot.answer_inline_query(&q.id, articles)
-            .cache_time(0)
-            .await?;
+        bot.answer_inline_query(&q.id, articles).await?;
         Ok(())
     }
 }
@@ -302,12 +302,6 @@ pub mod callback {
         data: &[&str],
         pool: &MySqlPool,
     ) -> anyhow::Result<()> {
-        // Todo finish you know
-        // bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), "cock")
-        //     .text("fuckme")
-        //     .reply_markup(make_shop())
-        //     .await?;
-
         if let [offer_type, offer_id] = *data {
             let offer_type = OfferType::from(offer_type);
             let offer_id = offer_id.parse().unwrap();
@@ -318,7 +312,7 @@ pub mod callback {
                     item.use_item(user_id, pool).await?;
                     "Успех"
                 }
-                _ => "Недостаточно рупий",
+                _ => "Недостаточно денег",
             };
             bot.answer_callback_query(&q.id).text(answer).await?;
             Ok(())

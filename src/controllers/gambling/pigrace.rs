@@ -1,11 +1,6 @@
-use anyhow::anyhow;
 use rand::Rng;
 use sqlx::MySqlPool;
-use std::{
-    default,
-    fmt::{self, format, write},
-    path::Display,
-};
+use std::fmt::{self};
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, types::Message, Bot};
 
@@ -73,7 +68,7 @@ pub async fn race_receive_bid(
                     return Ok(());
                 }
             };
-            let balance = economydb::get_balance(&pool, msg.from.as_ref().unwrap().id.0)
+            let balance = economydb::balance(&pool, msg.from.as_ref().unwrap().id.0)
                 .await
                 .unwrap_or(0.0);
             if balance < bid {
