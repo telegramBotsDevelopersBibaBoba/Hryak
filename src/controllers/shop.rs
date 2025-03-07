@@ -292,7 +292,7 @@ pub mod callback {
         payloads::AnswerCallbackQuerySetters, prelude::Requester, types::CallbackQuery, Bot,
     };
 
-    use crate::db::economydb;
+    use crate::controllers::economy;
 
     use super::OfferType;
 
@@ -307,7 +307,7 @@ pub mod callback {
             let offer_id = offer_id.parse().unwrap();
             let user_id = q.from.id.0;
 
-            let answer = match economydb::try_to_buy(pool, user_id, offer_id, offer_type).await {
+            let answer = match economy::try_to_buy(pool, user_id, offer_id, offer_type).await {
                 Ok(item) => {
                     item.use_item(user_id, pool).await?;
                     "Успех"

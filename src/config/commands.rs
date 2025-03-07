@@ -31,7 +31,9 @@ pub enum CallbackCommands {
     #[strum(serialize = "shop")]
     Shop,
     #[strum(serialize = "duel")]
-    StartDuel,
+    DuelStart,
+    #[strum(serialize = "action")]
+    DuelAction,
 }
 
 #[derive(Display, EnumString)]

@@ -1,4 +1,5 @@
-use crate::controllers::shop::OfferType;
+use crate::controllers::duel::DuelActionType;
+use crate::controllers::{duel::Duelist, shop::OfferType};
 use crate::db::shopdb;
 use sqlx::MySqlPool;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
@@ -48,5 +49,29 @@ pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String, bid: f64) -> In
         ),
     ];
 
+    InlineKeyboardMarkup::new([buttons])
+}
+
+pub fn make_duel_action(host_id: u64, duelist: Duelist) -> InlineKeyboardMarkup {
+    let buttons = vec![
+        InlineKeyboardButton::callback(
+            "Атаковать",
+            ser_command!(
+                "action",
+                &host_id.to_string(),
+                &DuelActionType::Attack.to_string(),
+                &duelist.to_string()
+            ),
+        ),
+        InlineKeyboardButton::callback(
+            "Защищаться",
+            ser_command!(
+                "action",
+                &host_id.to_string(),
+                &DuelActionType::Defense.to_string(),
+                &duelist.to_string()
+            ),
+        ),
+    ];
     InlineKeyboardMarkup::new([buttons])
 }

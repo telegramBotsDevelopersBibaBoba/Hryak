@@ -16,12 +16,7 @@ use teloxide::{
 };
 use tokio::time::sleep;
 
-use crate::{
-    config::commands::CallbackCommands,
-    controllers::{pig::proccess_duel_results, shop::OfferType},
-    db::{economydb, pigdb, shopdb},
-    deser_command,
-};
+use crate::{config::commands::CallbackCommands, deser_command};
 type HandlerResult = anyhow::Result<()>;
 pub async fn filter_callback_commands(
     bot: Bot,
@@ -41,7 +36,7 @@ pub async fn filter_callback_commands(
             CallbackCommands::Shop => {
                 controllers::shop::callback::callback_shop(&bot, &q, &data_vec[1..], &pool).boxed()
             } // args are <type> <id>
-            CallbackCommands::StartDuel => {
+            CallbackCommands::DuelStart => {
                 controllers::duel::callback::callbak_start_duel(
                     &bot,
                     &q,
@@ -51,6 +46,10 @@ pub async fn filter_callback_commands(
                 )
                 .boxed()
                 // Args are <host-id> <host-mention> <bid>
+            }
+            CallbackCommands::DuelAction => {
+                controllers::duel::callback::callback_duel_action(&bot, &q, &data_vec[1..], &pool)
+                    .boxed()
             }
         },
         Err(why) => callback_error(&bot, &q).boxed(),

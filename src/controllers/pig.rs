@@ -48,17 +48,6 @@ pub async fn get_pig(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
     return pigdb::pig_by_userid(pool, user_id).await;
 }
 
-pub async fn proccess_duel_results(
-    pool: &MySqlPool,
-    winner_id: u64,
-    loser_id: u64,
-    bid: f64,
-) -> anyhow::Result<()> {
-    economydb::add_money(pool, winner_id, bid * 2.0).await?;
-    economydb::sub_money(pool, loser_id, bid).await?;
-    Ok(())
-}
-
 pub mod inline {
     use sqlx::MySqlPool;
     use teloxide::{

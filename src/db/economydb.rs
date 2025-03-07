@@ -103,26 +103,3 @@ pub async fn increase_daily_income(
         .await?;
     Ok(())
 }
-
-pub async fn try_to_buy(
-    pool: &MySqlPool,
-    user_id: u64,
-    offer_id: u64,
-    offer_type: OfferType,
-) -> anyhow::Result<Offer> {
-    let offer = match offer_type {
-        OfferType::Food => Offer::Food(shopdb::food_offer(pool, offer_id).await?),
-        OfferType::Improvement => {
-            Offer::Improvement(shopdb::improvement_offer(pool, offer_id).await?)
-        }
-        OfferType::Buff => Offer::Buff(shopdb::buff_offer(pool, offer_id).await?),
-    };
-
-    match sub_money(pool, user_id, offer.get_price()).await {
-        Ok(_) => Ok(offer),
-        Err(why) => {
-            println!("{why}");
-            Err(anyhow!("Not enough money"))
-        }
-    }
-}
