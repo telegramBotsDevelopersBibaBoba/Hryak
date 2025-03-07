@@ -271,6 +271,7 @@ pub mod callback {
                                 .await?;
 
                             dueldb::remove_duel(pool, host_id).await?; // Remove duel from database so the user can start a new one
+                                                                       // (P.S duels are auto deleted every 10 minutes (if created_at date is older than 10 mins))
                             return Ok(());
                         }
                     }
