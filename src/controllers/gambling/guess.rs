@@ -5,6 +5,7 @@ use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 
 use crate::config::utils;
 use crate::db::economydb;
+use crate::StoragePool;
 
 use super::{should_cancel_dialog, HandlerResult};
 
@@ -31,7 +32,7 @@ pub async fn guess_number(
     bot: Bot,
     msg: Message,
     dialogue: GuessDialogue,
-    pool: MySqlPool,
+    pool: StoragePool,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
@@ -71,7 +72,7 @@ pub async fn guess_number_entered(
     msg: Message,
     bid: f64,
     dialogue: GuessDialogue,
-    pool: MySqlPool,
+    pool: StoragePool,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
@@ -110,7 +111,7 @@ pub async fn guess_number_entered(
 }
 
 pub async fn handle_guess_results(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     bid: f64,
     guessed_number: u8,
     user_id: u64,

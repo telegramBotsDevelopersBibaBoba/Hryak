@@ -4,6 +4,7 @@ use std::fmt::{self};
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, types::Message, Bot};
 
+use crate::StoragePool;
 use crate::{config::utils, db::economydb};
 
 use super::{should_cancel_dialog, HandlerResult};
@@ -51,7 +52,7 @@ pub async fn race_receive_bid(
     bot: Bot,
     msg: Message,
     dialogue: PigRaceDialogue,
-    pool: MySqlPool,
+    pool: crate::StoragePool,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
@@ -127,7 +128,7 @@ pub async fn race_receive_number(
     dialogue: PigRaceDialogue,
     (pigs, bid): (Vec<RacePig>, f64),
     msg: Message,
-    pool: MySqlPool,
+    pool: StoragePool,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {

@@ -2,19 +2,21 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use futures::FutureExt;
-use sqlx::MySqlPool;
+
 use teloxide::{
     dispatching::dialogue::InMemStorage, prelude::Dialogue, types::ChosenInlineResult, Bot,
     RequestError,
 };
 
-use crate::{config::commands::FeedbackCommands, controllers, db::pigdb, deser_command};
+use crate::{
+    config::commands::FeedbackCommands, controllers, db::pigdb, deser_command, StoragePool,
+};
 type HandlerResult = anyhow::Result<()>;
 pub async fn filter_inline_chosen_command(
     // Called when you click on a query
     bot: Bot,
     q: ChosenInlineResult,
-    pool: MySqlPool,
+    pool: StoragePool,
 ) -> HandlerResult {
     if q.query.is_empty() {
         return Ok(());

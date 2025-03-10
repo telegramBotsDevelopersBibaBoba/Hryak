@@ -4,7 +4,7 @@ use crate::db::shopdb;
 use sqlx::MySqlPool;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
-use crate::ser_command;
+use crate::{ser_command, StoragePool};
 
 pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
     let button = InlineKeyboardButton::switch_inline_query_current_chat("Узнать про хряка", "хряк");
@@ -20,7 +20,7 @@ pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
 
 pub async fn make_shop(
     shop_items_indexes: &Vec<(u64, OfferType)>,
-    pool: &MySqlPool,
+    pool: &StoragePool,
 ) -> anyhow::Result<(InlineKeyboardMarkup, String)> {
     // Make different buttons
     let mut buttons = Vec::new();

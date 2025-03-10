@@ -7,11 +7,12 @@ use crate::controllers::{pig, shop};
 
 use crate::db::economydb;
 use crate::handlers::keyboard;
+use crate::StoragePool;
 
 use super::keyboard::make_duel;
 
 pub async fn inline_hryak_info_article(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let pig = pig::get_pig(pool, user_id).await?;
@@ -56,11 +57,11 @@ pub fn inline_guessing_game_article() -> InlineQueryResultArticle {
 
 pub async fn inline_shop_article(
     q: &InlineQuery,
-    pool: &MySqlPool,
+    pool: &StoragePool,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let offers = shop::get_daily_offers();
 
-    let (kb, text) = keyboard::make_shop(&offers, &pool).await?;
+    let (kb, text) = keyboard::make_shop(&offers, pool).await?;
 
     let shop = InlineQueryResultArticle::new(
         "shop".to_string(),
@@ -104,7 +105,7 @@ pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
 }
 
 pub async fn inline_duel_article(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     duel_host_id: u64,
     duel_host_mention: String,
     bid: f64,
@@ -140,7 +141,7 @@ pub async fn inline_duel_article(
 }
 
 pub async fn inline_balance_article(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let balance = economydb::balance(pool, user_id).await?;
@@ -148,7 +149,7 @@ pub async fn inline_balance_article(
 
     let message = format!(
         "Ваш баланс: {}$\nВаш ежедневный доход: {}$",
-        balance, daily_income.0
+        balance, daily_income
     );
 
     let balance_article = InlineQueryResultArticle::new(

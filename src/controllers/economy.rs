@@ -9,11 +9,14 @@ use teloxide::{types::Message, Bot};
 use crate::{
     config::commands::EconomyCommands,
     db::{economydb, shopdb},
+    StoragePool,
 };
 use crate::{config::utils, db::userdb};
 
 use super::shop::{Offer, OfferType};
 
+const DEFAULT_BALANCE: f64 = 10.0;
+const DEFAULT_DAILY_INCOME: f64 = 10.0;
 pub struct BankAccount {
     balance: f64,
     daily_income: f64,
@@ -39,20 +42,22 @@ pub async fn economy_handle(
     bot: Bot,
     msg: Message,
     cmd: EconomyCommands,
-    pool: MySqlPool,
+    pool: StoragePool,
 ) -> HandlerResult {
     match cmd {
         EconomyCommands::DailyIncome => {
-            let (income_total, last_income) =
+            let income_total =
                 economydb::daily_income(&pool, msg.from.as_ref().unwrap().id.0).await?;
 
             if let Err(_) = economydb::do_daily_income(&pool, msg.from.as_ref().unwrap().id.0).await
             {
+                let income_time =
+                    economydb::income_time(&pool, msg.from.as_ref().unwrap().id.0).await?;
                 let message = format!(
                     "<a href=\"tg://user?id={}\">{}</a>, рано! Подождите еще {} часов.",
                     msg.from.as_ref().unwrap().id.0,
                     msg.from.as_ref().unwrap().first_name,
-                    24 - (Utc::now() - last_income.unwrap()).num_hours()
+                    24 - (Utc::now() - income_time.unwrap()).num_hours()
                 );
                 utils::send_msg(&bot, &msg, &message).await?;
                 return Ok(());
@@ -99,9 +104,13 @@ pub mod inline {
         Bot,
     };
 
-    use crate::handlers::articles;
+    use crate::{handlers::articles, StoragePool};
 
-    pub async fn inline_balance(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+    pub async fn inline_balance(
+        bot: Bot,
+        q: &InlineQuery,
+        pool: &StoragePool,
+    ) -> anyhow::Result<()> {
         let balance_article = articles::inline_balance_article(pool, q.from.id.0).await?;
 
         let articles = vec![InlineQueryResult::Article(balance_article)];
@@ -114,7 +123,7 @@ pub mod inline {
 }
 
 pub async fn try_to_buy(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     user_id: u64,
     offer_id: u64,
     offer_type: OfferType,

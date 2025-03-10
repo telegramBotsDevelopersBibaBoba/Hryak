@@ -8,8 +8,8 @@ use crate::controllers::user;
 use crate::db::pigdb;
 use crate::db::userdb;
 use crate::handlers::articles;
+use crate::StoragePool;
 use futures::FutureExt;
-use sqlx::MySqlPool;
 use teloxide::payloads::AnswerInlineQuerySetters;
 use teloxide::prelude::Request;
 use teloxide::{
@@ -19,7 +19,7 @@ use teloxide::{
 };
 type HandlerResult = anyhow::Result<()>;
 
-pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: MySqlPool) -> HandlerResult {
+pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: StoragePool) -> HandlerResult {
     let command_str = &q.query; // Extracting a command from the query (we'll have to parse it later for arguments I think tho)
     let command_data = &q.query.split_once(" ");
 
@@ -96,7 +96,7 @@ async fn inline_error(
     Ok(())
 }
 
-async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_info_article(pool, q.from.id.0).await?;
     let duel = articles::inline_duel_article(
         pool,

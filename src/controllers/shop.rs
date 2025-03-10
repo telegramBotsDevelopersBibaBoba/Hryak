@@ -1,6 +1,6 @@
 use crate::{
     db::{economydb, inventorydb, pigdb},
-    ser_command,
+    ser_command, StoragePool,
 };
 use anyhow::anyhow;
 use rand::Rng;
@@ -186,7 +186,7 @@ impl Offer {
         }
     }
 
-    pub async fn use_item(&self, by_user: u64, pool: &MySqlPool) -> anyhow::Result<()> {
+    pub async fn use_item(&self, by_user: u64, pool: &StoragePool) -> anyhow::Result<()> {
         match self {
             Self::Food(item) => pigdb::feed(pool, item.nutrition, by_user).await,
             Self::Improvement(item) => {
@@ -219,53 +219,62 @@ pub fn get_daily_offers() -> Vec<(u64, OfferType)> {
 }
 static mut TODAYS_OFFERS: Vec<(u64, OfferType)> = Vec::new();
 
+// Test
+// static mut FOOD_OFFERS: Vec<FoodOffer> = Vec::new();
+// static mut BUFF_OFFERS: Vec<BuffOffer> = Vec::new();
+// static mut IMPROVEMENT_OFFERS: Vec<ImprovementOffer> = Vec::new();
+
 const FOOD_OFFERS_MAX: u64 = 20;
 const IMPROV_OFFERS_MAX: u64 = 20;
 const BUFF_OFFERS_MAX: u64 = 20;
 
 pub async fn generate_new_offers() {
-    unsafe {
-        TODAYS_OFFERS.clear();
-    }
-
-    let generate_unique_offer = |max: u64, exclude: u64| {
-        let mut id;
-        loop {
-            id = rand::rng().random_range(1..=max);
-            if id != exclude {
-                break id;
-            }
+    loop {
+        unsafe {
+            // FOOD_OFFERS.clear();
+            // IMPROVEMENT_OFFERS.clear();
+            // BUFF_OFFERS.clear();
+            TODAYS_OFFERS.clear();
         }
-    };
 
-    let food_offer_first = rand::rng().random_range(1..=FOOD_OFFERS_MAX);
-    let food_offer_second = generate_unique_offer(FOOD_OFFERS_MAX, food_offer_first);
+        let generate_unique_offer = |max: u64, exclude: u64| {
+            let mut id;
+            loop {
+                id = rand::rng().random_range(1..=max);
+                if id != exclude {
+                    break id;
+                }
+            }
+        };
 
-    let improv_offer_first = rand::rng().random_range(1..=IMPROV_OFFERS_MAX);
-    let improv_offer_second = generate_unique_offer(IMPROV_OFFERS_MAX, improv_offer_first);
+        let food_offer_first = rand::rng().random_range(1..=FOOD_OFFERS_MAX);
+        let food_offer_second = generate_unique_offer(FOOD_OFFERS_MAX, food_offer_first);
 
-    let buff_offer_first = rand::rng().random_range(1..=BUFF_OFFERS_MAX);
-    let buff_offer_second = generate_unique_offer(BUFF_OFFERS_MAX, buff_offer_first);
+        let improv_offer_first = rand::rng().random_range(1..=IMPROV_OFFERS_MAX);
+        let improv_offer_second = generate_unique_offer(IMPROV_OFFERS_MAX, improv_offer_first);
 
-    unsafe {
-        TODAYS_OFFERS.reserve(7);
-        TODAYS_OFFERS.push((food_offer_first, OfferType::Food));
-        TODAYS_OFFERS.push((food_offer_second, OfferType::Food));
+        let buff_offer_first = rand::rng().random_range(1..=BUFF_OFFERS_MAX);
+        let buff_offer_second = generate_unique_offer(BUFF_OFFERS_MAX, buff_offer_first);
 
-        TODAYS_OFFERS.push((improv_offer_first, OfferType::Improvement));
-        TODAYS_OFFERS.push((improv_offer_second, OfferType::Improvement));
+        unsafe {
+            TODAYS_OFFERS.reserve(7);
+            TODAYS_OFFERS.push((food_offer_first, OfferType::Food));
+            TODAYS_OFFERS.push((food_offer_second, OfferType::Food));
 
-        TODAYS_OFFERS.push((buff_offer_first, OfferType::Buff));
-        TODAYS_OFFERS.push((buff_offer_second, OfferType::Buff));
+            TODAYS_OFFERS.push((improv_offer_first, OfferType::Improvement));
+            TODAYS_OFFERS.push((improv_offer_second, OfferType::Improvement));
+
+            TODAYS_OFFERS.push((buff_offer_first, OfferType::Buff));
+            TODAYS_OFFERS.push((buff_offer_second, OfferType::Buff));
+        }
+
+        println!("Sleeping");
+        thread::sleep(Duration::from_secs(86400));
+        println!("Stopped sleeping");
     }
-
-    println!("Sleeping");
-    thread::sleep(Duration::from_secs(86400));
-    println!("Stopped sleeping");
 }
 
 pub mod inline {
-    use sqlx::MySqlPool;
     use teloxide::{
         payloads::AnswerInlineQuerySetters,
         prelude::Requester,
@@ -273,9 +282,9 @@ pub mod inline {
         Bot,
     };
 
-    use crate::handlers::articles;
+    use crate::{handlers::articles, StoragePool};
 
-    pub async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &MySqlPool) -> anyhow::Result<()> {
+    pub async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> anyhow::Result<()> {
         let shop = articles::inline_shop_article(q, pool).await?;
 
         let articles = vec![InlineQueryResult::Article(shop)];
@@ -292,7 +301,7 @@ pub mod callback {
         payloads::AnswerCallbackQuerySetters, prelude::Requester, types::CallbackQuery, Bot,
     };
 
-    use crate::controllers::economy;
+    use crate::{controllers::economy, StoragePool};
 
     use super::OfferType;
 
@@ -300,7 +309,7 @@ pub mod callback {
         bot: &Bot,
         q: &CallbackQuery,
         data: &[&str],
-        pool: &MySqlPool,
+        pool: &StoragePool,
     ) -> anyhow::Result<()> {
         if let [offer_type, offer_id] = *data {
             let offer_type = OfferType::from(offer_type);

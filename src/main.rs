@@ -7,7 +7,9 @@ use controllers::gambling::pigrace::PigRaceState;
 use controllers::gambling::{self, GambleCommands};
 use controllers::shop::{self, OfferType};
 use handlers::keyboard;
+use r2d2::Pool;
 use rand::{rng, Rng};
+use redis::Client;
 use sqlx::MySqlPool;
 use teloxide::dispatching::dialogue::{self, InMemStorage};
 use teloxide::dispatching::UpdateHandler;
@@ -28,6 +30,12 @@ mod controllers;
 mod db;
 mod handlers;
 
+#[derive(Clone, Debug)]
+struct StoragePool {
+    mysql_pool: MySqlPool,
+    redis_pool: Pool<Client>,
+}
+
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
@@ -35,7 +43,7 @@ async fn main() {
 
     let con_str = "mysql://klewy:root@localhost:3306/hryak";
 
-    let pool = sqlx::mysql::MySqlPoolOptions::new()
+    let mysql_pool = sqlx::mysql::MySqlPoolOptions::new()
         .max_connections(10)
         .acquire_timeout(Duration::from_secs(5))
         .connect(&con_str)
@@ -44,11 +52,19 @@ async fn main() {
 
     let bot = Bot::from_env(); // Setting up bot from TELOXIDE_TOKEN env variable (P.S 'export TELOXIDE_TOKEN=<token>' in terminal)
 
+    let redis_connection = redis::Client::open("redis://127.0.0.1").unwrap();
+    let redis_pool = r2d2::Pool::builder().build(redis_connection).unwrap();
+
+    let storage_pool = StoragePool {
+        mysql_pool,
+        redis_pool,
+    };
+
     tokio::spawn(shop::generate_new_offers());
 
     Dispatcher::builder(bot, scheme())
         .dependencies(dptree::deps![
-            pool,
+            storage_pool,
             InMemStorage::<PigRaceState>::new(),
             InMemStorage::<GuessState>::new()
         ])
