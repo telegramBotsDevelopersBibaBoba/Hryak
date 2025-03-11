@@ -1,12 +1,14 @@
 use crate::{
-    db::{economydb, inventorydb, pigdb},
+    db::{economydb, pigdb},
     ser_command, StoragePool,
 };
 use anyhow::anyhow;
 use rand::Rng;
-use sqlx::{mysql::MySqlRow, MySqlPool, Row};
+use sqlx::{mysql::MySqlRow, Row};
 use std::{
-    fmt::{format, Display},
+    collections::HashMap,
+    fmt::Display,
+    sync::{LazyLock, RwLock},
     thread,
     time::Duration,
 };
@@ -14,6 +16,7 @@ use teloxide::types::InlineKeyboardButton;
 
 use super::inventory;
 
+#[derive(Clone)]
 pub struct FoodOffer {
     id: i64,
     price: f64,
@@ -50,6 +53,7 @@ impl Display for FoodOffer {
     }
 }
 
+#[derive(Clone)]
 pub struct ImprovementOffer {
     id: i64,
     title: String,
@@ -91,6 +95,7 @@ impl Display for ImprovementOffer {
     }
 }
 
+#[derive(Clone)]
 pub struct BuffOffer {
     id: i64,
     title: String,
@@ -217,12 +222,13 @@ pub fn get_daily_offers() -> Vec<(u64, OfferType)> {
         return TODAYS_OFFERS.clone();
     };
 }
-static mut TODAYS_OFFERS: Vec<(u64, OfferType)> = Vec::new();
-
-// Test
-// static mut FOOD_OFFERS: Vec<FoodOffer> = Vec::new();
-// static mut BUFF_OFFERS: Vec<BuffOffer> = Vec::new();
-// static mut IMPROVEMENT_OFFERS: Vec<ImprovementOffer> = Vec::new();
+pub static mut TODAYS_OFFERS: Vec<(u64, OfferType)> = Vec::new();
+pub static FOOD_OFFERS: LazyLock<RwLock<HashMap<u64, FoodOffer>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+pub static BUFF_OFFERS: LazyLock<RwLock<HashMap<u64, BuffOffer>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+pub static IMPROVEMENT_OFFERS: LazyLock<RwLock<HashMap<u64, ImprovementOffer>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 const FOOD_OFFERS_MAX: u64 = 20;
 const IMPROV_OFFERS_MAX: u64 = 20;
@@ -231,10 +237,10 @@ const BUFF_OFFERS_MAX: u64 = 20;
 pub async fn generate_new_offers() {
     loop {
         unsafe {
-            // FOOD_OFFERS.clear();
-            // IMPROVEMENT_OFFERS.clear();
-            // BUFF_OFFERS.clear();
             TODAYS_OFFERS.clear();
+            FOOD_OFFERS.write().unwrap().clear();
+            BUFF_OFFERS.write().unwrap().clear();
+            IMPROVEMENT_OFFERS.write().unwrap().clear();
         }
 
         let generate_unique_offer = |max: u64, exclude: u64| {
