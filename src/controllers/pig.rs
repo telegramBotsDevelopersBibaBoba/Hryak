@@ -1,12 +1,17 @@
 use rand::Rng;
-use sqlx::{mysql::MySqlRow, MySqlPool, Row};
+use sqlx::{mysql::MySqlRow, Row};
 
-use crate::db::{economydb, pigdb, userdb};
+use crate::{
+    db::{economydb, pigdb, userdb},
+    StoragePool,
+};
 
-use super::user;
+pub const DEFAULT_WEIGHT: f64 = 50.0;
+pub const DEFAULT_ATTACK: f64 = 5.0;
+pub const DEFAULT_DEFENSE: f64 = 5.0;
 
 pub struct Pig {
-    id: i64,
+    pub id: i64,
     pub user_id: i64,
     pub weight: f64,
     pub attack: f64,
@@ -32,24 +37,13 @@ impl Pig {
             name,
         })
     }
-    pub fn duel(&self, other_pig: &Pig) -> bool {
-        let mass_weight = 0.3;
-        let power_first = self.attack + mass_weight * self.weight;
-        let power_second = other_pig.attack + mass_weight * other_pig.weight;
-
-        let final_first = power_first * rand::rng().random_range(0.6..=1.1);
-        let final_second = power_second * rand::rng().random_range(0.6..=1.1);
-        println!("Host: {}\nPart: {}", final_first, final_second);
-        final_first > final_second
-    }
 }
 
-pub async fn get_pig(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Pig> {
+pub async fn get_pig(pool: &StoragePool, user_id: u64) -> anyhow::Result<Pig> {
     return pigdb::pig_by_userid(pool, user_id).await;
 }
 
 pub mod inline {
-    use sqlx::MySqlPool;
     use teloxide::{
         payloads::AnswerInlineQuerySetters,
         prelude::Requester,
@@ -57,7 +51,7 @@ pub mod inline {
         Bot,
     };
 
-    use crate::handlers::articles;
+    use crate::{handlers::articles, StoragePool};
 
     pub async fn inline_change_name(bot: Bot, q: &InlineQuery, data: &str) -> anyhow::Result<()> {
         let changename = articles::inline_change_name_article(data);
@@ -81,7 +75,7 @@ pub mod inline {
     pub async fn inline_hryak_info(
         bot: Bot,
         q: &InlineQuery,
-        pool: &MySqlPool,
+        pool: &StoragePool,
     ) -> anyhow::Result<()> {
         let hryak = articles::inline_hryak_info_article(pool, q.from.id.0).await?;
 
@@ -95,16 +89,15 @@ pub mod inline {
 }
 
 pub mod feedback {
-    use sqlx::MySqlPool;
     use teloxide::{types::ChosenInlineResult, Bot};
 
-    use crate::db::pigdb;
+    use crate::{db::pigdb, StoragePool};
 
     pub async fn feedback_rename_hryak(
         bot: Bot,
         q: &ChosenInlineResult,
         args: &[&str],
-        pool: &MySqlPool,
+        pool: &StoragePool,
     ) -> anyhow::Result<()> {
         if args.is_empty() {
             return Err(anyhow::anyhow!("Rename hryak args are emtpy"));

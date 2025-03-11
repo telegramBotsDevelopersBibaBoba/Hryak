@@ -5,11 +5,11 @@ use teloxide::{
     Bot,
 };
 
-use crate::{config::utils, db::userdb, handlers::articles};
+use crate::{config::utils, db::userdb, handlers::articles, StoragePool};
 
 use super::user;
 
-pub async fn handle_message(bot: Bot, msg: Message, pool: MySqlPool) -> bool {
+pub async fn handle_message(bot: Bot, msg: Message, pool: StoragePool) -> bool {
     if msg.from.as_ref().unwrap().username.is_none() {
         utils::send_msg(
             &bot,
@@ -26,13 +26,19 @@ pub async fn handle_message(bot: Bot, msg: Message, pool: MySqlPool) -> bool {
     if !userdb::exists(&pool, user_id).await {
         user::create_user(&pool, user_id, "None").await.unwrap();
     }
-    userdb::set_username(&pool, &username, user_id)
-        .await
-        .unwrap();
+    if username
+        != &userdb::username(&pool, user_id)
+            .await
+            .unwrap_or("".to_string())
+    {
+        userdb::set_username(&pool, username, user_id)
+            .await
+            .unwrap();
+    }
     true
 }
 
-pub async fn handle_other(_: Bot, update: Update, pool: MySqlPool) -> bool {
+pub async fn handle_other(_: Bot, update: Update, pool: StoragePool) -> bool {
     if update.from().as_ref().unwrap().username.is_none() {
         println!("user doesnt have a nickname");
         return false;
@@ -43,13 +49,19 @@ pub async fn handle_other(_: Bot, update: Update, pool: MySqlPool) -> bool {
     if !userdb::exists(&pool, user_id).await {
         user::create_user(&pool, user_id, "None").await.unwrap()
     }
-    userdb::set_username(&pool, &username, user_id)
-        .await
-        .unwrap();
+    if username
+        != &userdb::username(&pool, user_id)
+            .await
+            .unwrap_or("".to_string())
+    {
+        userdb::set_username(&pool, username, user_id)
+            .await
+            .unwrap();
+    }
     true
 }
 
-pub async fn handle_inline(bot: Bot, q: InlineQuery, pool: MySqlPool) -> bool {
+pub async fn handle_inline(bot: Bot, q: InlineQuery, pool: StoragePool) -> bool {
     if q.from.username.is_none() {
         let article = articles::make_article(
             "no_username",
@@ -69,8 +81,14 @@ pub async fn handle_inline(bot: Bot, q: InlineQuery, pool: MySqlPool) -> bool {
     if !userdb::exists(&pool, user_id).await {
         user::create_user(&pool, user_id, "None").await.unwrap();
     }
-    userdb::set_username(&pool, &username, user_id)
-        .await
-        .unwrap();
+    if username
+        != &userdb::username(&pool, user_id)
+            .await
+            .unwrap_or("".to_string())
+    {
+        userdb::set_username(&pool, username, user_id)
+            .await
+            .unwrap();
+    }
     true
 }

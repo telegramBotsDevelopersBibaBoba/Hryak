@@ -3,7 +3,7 @@ use std::{fmt::Display, ops::RangeInclusive, str::FromStr};
 use anyhow::anyhow;
 use sqlx::{mysql::MySqlRow, MySqlPool, Row};
 
-use crate::db::economydb;
+use crate::{db::economydb, StoragePool};
 
 const ATTACK_RANDOM_FACTOR: RangeInclusive<f64> = 0.8..=1.2;
 const DEFENSE_RANDOM_FACTOR: RangeInclusive<f64> = 0.5..=1.0;
@@ -83,7 +83,7 @@ impl Duel {
 }
 
 pub async fn proccess_duel_results(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     winner_id: u64,
     loser_id: u64,
     bid: f64,
@@ -102,12 +102,12 @@ pub mod inline {
         Bot,
     };
 
-    use crate::handlers::articles;
+    use crate::{handlers::articles, StoragePool};
 
     pub async fn inline_duel(
         bot: Bot,
         q: &InlineQuery,
-        pool: &MySqlPool,
+        pool: &StoragePool,
         bid: f64,
     ) -> anyhow::Result<()> {
         let duel =
@@ -139,6 +139,7 @@ pub mod callback {
         config::consts,
         db::{dueldb, economydb, pigdb, userdb},
         handlers::keyboard,
+        StoragePool,
     };
 
     use super::{
@@ -151,7 +152,7 @@ pub mod callback {
         q: &CallbackQuery,
         data: &[&str],
         part_id: u64,
-        pool: &MySqlPool,
+        pool: &StoragePool,
     ) -> anyhow::Result<()> {
         if data.is_empty() {
             bot.edit_message_text_inline(
@@ -220,7 +221,7 @@ pub mod callback {
         bot: &Bot,
         q: &CallbackQuery,
         data: &[&str],
-        pool: &MySqlPool,
+        pool: &StoragePool,
     ) -> anyhow::Result<()> {
         /*
         TODO 1: Better algo for defense (maybe)

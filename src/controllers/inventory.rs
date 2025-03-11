@@ -3,6 +3,7 @@ use sqlx::{MySqlPool, Row};
 
 use crate::db::inventorydb;
 use crate::db::shopdb::get_usages_buff;
+use crate::StoragePool;
 
 pub struct InventorySlot {
     id: i64,
@@ -33,7 +34,7 @@ impl InventorySlot {
     }
 }
 
-pub async fn add_item(pool: &MySqlPool, item_id: u64, user_id: u64) -> anyhow::Result<()> {
+pub async fn add_item(pool: &StoragePool, item_id: u64, user_id: u64) -> anyhow::Result<()> {
     let usages = get_usages_buff(pool, item_id).await?;
     if inventorydb::item_exists(pool, item_id, user_id).await {
         inventorydb::increase_item_usages(pool, item_id, user_id, usages).await?;

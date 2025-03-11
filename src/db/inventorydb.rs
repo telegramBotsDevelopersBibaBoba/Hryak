@@ -1,25 +1,23 @@
-use sqlx::MySqlPool;
-
-use crate::controllers::inventory::InventorySlot;
+use crate::{controllers::inventory::InventorySlot, StoragePool};
 
 pub async fn invslot(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     buff_id: u64,
     user_id: u64,
 ) -> anyhow::Result<InventorySlot> {
     let row = sqlx::query("SELECT * FROM inventory_slot_view WHERE user_id = ? AND item_id = ?")
         .bind(user_id)
         .bind(buff_id)
-        .fetch_one(pool)
+        .fetch_one(&pool.mysql_pool)
         .await?;
     Ok(InventorySlot::from_mysql_row(row)?)
 }
 
-pub async fn item_exists(pool: &MySqlPool, item_id: u64, user_id: u64) -> bool {
+pub async fn item_exists(pool: &StoragePool, item_id: u64, user_id: u64) -> bool {
     match sqlx::query("SELECT * FROM inventory WHERE user_id = ? AND item_id = ?")
         .bind(user_id)
         .bind(item_id)
-        .fetch_one(pool)
+        .fetch_one(&pool.mysql_pool)
         .await
     {
         Ok(_) => true,
@@ -28,7 +26,7 @@ pub async fn item_exists(pool: &MySqlPool, item_id: u64, user_id: u64) -> bool {
 }
 
 pub async fn increase_item_usages(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     item_id: u64,
     user_id: u64,
     add_usages: i32,
@@ -37,13 +35,13 @@ pub async fn increase_item_usages(
         .bind(add_usages)
         .bind(user_id)
         .bind(item_id)
-        .execute(pool)
+        .execute(&pool.mysql_pool)
         .await?;
     Ok(())
 }
 
 pub async fn set_item_usages(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     item_id: i64,
     user_id: i64,
     usages: i32,
@@ -52,13 +50,13 @@ pub async fn set_item_usages(
         .bind(usages)
         .bind(user_id)
         .bind(item_id)
-        .execute(pool)
+        .execute(&pool.mysql_pool)
         .await?;
     Ok(())
 }
 
 pub async fn add_item(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     item_id: u64,
     user_id: u64,
     usages: i32,
@@ -67,7 +65,7 @@ pub async fn add_item(
         .bind(user_id)
         .bind(item_id)
         .bind(usages)
-        .execute(pool)
+        .execute(&pool.mysql_pool)
         .await?;
     Ok(())
 }

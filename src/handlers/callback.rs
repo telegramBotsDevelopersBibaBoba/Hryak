@@ -3,11 +3,11 @@ use std::{str::FromStr, time::Duration};
 use crate::{
     config::consts,
     controllers::{self, shop::Offer, user},
+    StoragePool,
 };
 use anyhow::anyhow;
 use futures::FutureExt;
 
-use sqlx::MySqlPool;
 use teloxide::{
     payloads::AnswerCallbackQuerySetters,
     prelude::{Request, Requester},
@@ -21,7 +21,7 @@ type HandlerResult = anyhow::Result<()>;
 pub async fn filter_callback_commands(
     bot: Bot,
     q: CallbackQuery,
-    pool: MySqlPool,
+    pool: StoragePool,
 ) -> HandlerResult {
     // Called usually when you click on a button
     if q.data.is_none() {
