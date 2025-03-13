@@ -6,6 +6,8 @@ pub enum GambleCommands {
     Guess,
     #[command(aliases = ["race"])]
     Race,
+    #[command(aliases = ["treasurehunt"])]
+    TreasureHunt,
 }
 type HandlerResult = anyhow::Result<()>;
 
@@ -31,3 +33,4 @@ pub mod inline {
 // List of games
 pub mod guess;
 pub mod pigrace;
+pub mod treasurehunt;

@@ -4,6 +4,7 @@ use config::{commands, utils};
 
 use controllers::gambling::guess::GuessState;
 use controllers::gambling::pigrace::PigRaceState;
+use controllers::gambling::treasurehunt::TreasureState;
 use controllers::gambling::{self, GambleCommands};
 use controllers::shop::{self, OfferType};
 use handlers::keyboard;
@@ -66,7 +67,8 @@ async fn main() {
         .dependencies(dptree::deps![
             storage_pool,
             InMemStorage::<PigRaceState>::new(),
-            InMemStorage::<GuessState>::new()
+            InMemStorage::<GuessState>::new(),
+            InMemStorage::<TreasureState>::new()
         ])
         .enable_ctrlc_handler()
         .build()
@@ -98,11 +100,6 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
         dptree::case![GuessState::Start]
             .branch(dptree::case![GambleCommands::Guess].endpoint(gambling::guess::guess_bid)),
     );
-
-    let race_commands = teloxide::filter_command::<GambleCommands, _>().branch(
-        dptree::case![PigRaceState::Start]
-            .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
-    );
     let guess_handler = Update::filter_message()
         .branch(guess_commands)
         .branch(dptree::case![GuessState::ReceiveBid].endpoint(gambling::guess::guess_number))
@@ -110,6 +107,12 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
             dptree::case![GuessState::ReceiveNumber { bid }]
                 .endpoint(gambling::guess::guess_number_entered),
         );
+
+    let race_commands = teloxide::filter_command::<GambleCommands, _>().branch(
+        dptree::case![PigRaceState::Start]
+            .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
+    );
+
     let pigrace_handler = Update::filter_message()
         .branch(race_commands)
         .branch(
@@ -119,10 +122,31 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
             dptree::case![PigRaceState::ReceiveChosenPig { pigs, bid }]
                 .endpoint(gambling::pigrace::race_receive_number),
         );
+
+    let treasure_commands = teloxide::filter_command::<GambleCommands, _>().branch(
+        dptree::case![TreasureState::Start].branch(
+            dptree::case![GambleCommands::TreasureHunt]
+                .endpoint(gambling::treasurehunt::treasure_bid),
+        ),
+    );
+    let treasure_handler = Update::filter_message()
+        .branch(treasure_commands)
+        .branch(
+            dptree::case![TreasureState::ReceiveBid]
+                .endpoint(gambling::treasurehunt::treasure_receive_bid),
+        )
+        .branch(
+            dptree::case![TreasureState::ReceiveLocation { bid, locations }]
+                .endpoint(gambling::treasurehunt::location_chosen),
+        );
+
     let guess_dialogue =
         dialogue::enter::<Update, InMemStorage<GuessState>, GuessState, _>().branch(guess_handler);
     let pigrace_dialogue = dialogue::enter::<Update, InMemStorage<PigRaceState>, PigRaceState, _>()
         .branch(pigrace_handler);
+    let treasure_dialogue =
+        dialogue::enter::<Update, InMemStorage<TreasureState>, TreasureState, _>()
+            .branch(treasure_handler);
 
     dptree::entry()
         .branch(general_handler)
@@ -132,4 +156,5 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
         .branch(feedback_handler)
         .branch(guess_dialogue)
         .branch(pigrace_dialogue)
+        .branch(treasure_dialogue)
 }
