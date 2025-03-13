@@ -58,16 +58,18 @@ pub async fn pig_by_userid(pool: &StoragePool, user_id: u64) -> anyhow::Result<P
     let mut redis_con = pool.redis_pool.get()?;
 
     if let Ok(pig_str) = redis_con.hgetall::<_, Vec<(String, String)>>(format!("pig:{}", user_id)) {
-        let pig = Pig {
-            weight: pig_str[0].1.parse::<f64>()?,
-            attack: pig_str[1].1.parse::<f64>()?,
-            defense: pig_str[2].1.parse::<f64>()?,
-            user_id: pig_str[3].1.parse::<i64>()?,
-            name: pig_str[4].1.clone(),
-            id: 0,
-        };
-        println!("pig struct from cache");
-        return Ok(pig);
+        if !pig_str.is_empty() {
+            let pig = Pig {
+                weight: pig_str[0].1.parse::<f64>()?,
+                attack: pig_str[1].1.parse::<f64>()?,
+                defense: pig_str[2].1.parse::<f64>()?,
+                user_id: pig_str[3].1.parse::<i64>()?,
+                name: pig_str[4].1.clone(),
+                id: 0,
+            };
+            println!("pig struct from cache");
+            return Ok(pig);
+        }
     }
 
     let row = sqlx::query("SELECT * FROM pigs WHERE user_id = ?")

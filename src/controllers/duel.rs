@@ -127,7 +127,6 @@ pub mod callback {
 
     use anyhow::anyhow;
     use rand::Rng;
-    use sqlx::MySqlPool;
     use teloxide::{
         payloads::{AnswerCallbackQuerySetters, EditMessageTextInlineSetters},
         prelude::{Request, Requester},
@@ -170,7 +169,7 @@ pub mod callback {
 
         if host_id == part_id {
             bot.answer_callback_query(&q.id)
-                .text("Нельзя дуэлить себя идиот гадэмн бля")
+                .text("Нельзя дуэлить себя")
                 .send()
                 .await?;
             return Ok(());
@@ -180,17 +179,15 @@ pub mod callback {
             .trim()
             .parse::<f64>()
             .unwrap_or(consts::DUEL_DEFAULT_BID);
-        let part_balance = economydb::balance(pool, part_id).await?;
-        if part_balance < bid {
-            bot.answer_callback_query(&q.id)
-                .text("Недостаточно денег!")
-                .send()
-                .await?;
-            return Ok(());
-        }
+
         // Withdraw bids so it works good when users are in several duels at once
         economydb::sub_money(pool, host_id, bid).await?;
-        economydb::sub_money(pool, part_id, bid).await?;
+        if let Err(why) = economydb::sub_money(pool, part_id, bid).await {
+            eprintln!("Error sub money from part: {}", why);
+            bot.answer_callback_query(&q.id).await?;
+            return Ok(())
+        }
+
         // Creeate a duel in table
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
         let part_pig = pigdb::pig_by_userid(pool, part_id).await?;
@@ -225,9 +222,6 @@ pub mod callback {
     ) -> anyhow::Result<()> {
         /*
         TODO 1: Better algo for defense (maybe)
-        TODO 2: fix all kinds of errors (user playing several duels at the same time)
-
-
         */
 
         // Parse all callback data
@@ -252,7 +246,6 @@ pub mod callback {
                         .await?;
                     return Ok(());
                 }
-
                 match action_type {
                     DuelActionType::Attack => {
                         duel.part_hp -=
@@ -277,7 +270,6 @@ pub mod callback {
                         }
                     }
                     DuelActionType::Defense => {
-                        // TODO i think, better algo for defense
                         duel.host_hp +=
                             host_pig.defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
                         if duel.host_hp > host_pig.weight {

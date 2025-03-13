@@ -178,7 +178,6 @@ pub async fn location_chosen(
             let chosen_location = &locations[chosen_id];
             let result = simulate_treasure_hunt(chosen_location, bid);
 
-            // Снимаем ставку с баланса
 
             match result {
                 TreasureResult::Coins(amount) => {

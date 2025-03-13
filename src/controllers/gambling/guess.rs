@@ -50,10 +50,8 @@ pub async fn guess_number(
                 }
             };
 
-            let balance = economydb::balance(&pool, msg.from.as_ref().unwrap().id.0)
-                .await
-                .unwrap_or(0.0);
-            if balance < bid {
+            if let Err(why) = economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await {
+                eprintln!("Not enough money for guess: {}", why);
                 utils::send_msg(&bot, &msg, "Недостаточно денег!").await?;
                 dialogue.exit().await?;
                 return Ok(());
@@ -122,17 +120,10 @@ pub async fn handle_guess_results(
             "Вы проиграли {}$\nПравильный ответ был: {}",
             bid, number_result
         );
-        match economydb::sub_money(pool, user_id, bid).await {
-            Ok(_) => {}
-            Err(_) => {
-                return Ok(String::from("Недостаточно денег!"));
-            }
-        };
         return Ok(answer_str);
     }
 
     let answer_str = format!("Вы выиграли {}$", bid * GUESS_BID_MULTIPLIER);
-    economydb::add_money(pool, user_id, bid * GUESS_BID_MULTIPLIER - bid).await?;
-
+    economydb::add_money(pool, user_id, bid * GUESS_BID_MULTIPLIER).await?;
     Ok(answer_str)
 }

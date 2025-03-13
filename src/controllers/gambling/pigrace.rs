@@ -69,10 +69,8 @@ pub async fn race_receive_bid(
                     return Ok(());
                 }
             };
-            let balance = economydb::balance(&pool, msg.from.as_ref().unwrap().id.0)
-                .await
-                .unwrap_or(0.0);
-            if balance < bid {
+            if let Err(why) = economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await {
+                eprintln!("Not enough money for guess: {}", why);
                 utils::send_msg(&bot, &msg, "Недостаточно денег!").await?;
                 dialogue.exit().await?;
                 return Ok(());
@@ -164,14 +162,14 @@ pub async fn race_receive_number(
 
                 for (i, pig) in pigs.iter().enumerate() {
                     // Базовый прогресс = скорость * случайный множитель (0.8–1.2)
-                    let random_factor = rand::rng().random_range(0.8..=1.2);
+                    let random_factor = rand::rng().random_range(0.5..=1.2);
                     let mut stage_progress = pig.speed * random_factor;
 
                     // Штраф за усталость: чем ниже выносливость, тем больше снижение
                     let stamina_factor = pig.stamina as f32 / 5.0 as f32; // Нормализуем (предположим, stamina от 0 до 10)
                     let fatigue =
                         (stages as f32 - stage as f32 + 1.0) * (1.0 - stamina_factor) * 0.1;
-                    stage_progress -= fatigue.max(0.0); // Усталость снижает прогресс
+                    stage_progress -= fatigue.max(0.0) * rand::rng().random_range(0.8..1.2); // Усталость снижает прогресс
 
                     progress[i] += stage_progress;
 
@@ -199,7 +197,7 @@ pub async fn race_receive_number(
             let result_msg = if user_chose_winner {
                 let winnings = bid * RACE_BID_MULTIPLIER; // Коэффициент выигрыша
                                                           // Здесь можно обновить баланс в базе данных (pool)
-                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings - bid)
+                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings)
                     .await?;
                 format!(
                     "Победила свинья {}! Ты выиграл {}$!",
