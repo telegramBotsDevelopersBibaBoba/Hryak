@@ -5,17 +5,18 @@ use sqlx::MySqlPool;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use crate::{ser_command, StoragePool};
-
 pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
     let button = InlineKeyboardButton::switch_inline_query_current_chat("Узнать про хряка", "хряк");
-    let button2 =
-        InlineKeyboardButton::switch_inline_query_current_chat("Открыть магазин", "магазин");
-    let button3 =
-        InlineKeyboardButton::switch_inline_query_current_chat("Сменить имя хряка", "имя");
-    let button4 =
-        InlineKeyboardButton::switch_inline_query_current_chat("Своя ставка в дуэли", "дуэль 999");
+    let button2 = InlineKeyboardButton::switch_inline_query_current_chat("Открыть магазин", "магазин");
+    let button3 = InlineKeyboardButton::switch_inline_query_current_chat("Сменить имя хряка", "имя");
+    let button4 = InlineKeyboardButton::switch_inline_query_current_chat("Своя ставка в дуэли", "дуэль 999");
 
-    InlineKeyboardMarkup::new([[button, button2, button3, button4]])
+    InlineKeyboardMarkup::new([
+        [button],
+        [button2],
+        [button3],
+        [button4],
+    ])
 }
 
 pub async fn make_shop(
