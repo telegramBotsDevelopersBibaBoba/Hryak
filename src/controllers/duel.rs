@@ -90,7 +90,7 @@ impl Duel {
             host_attack,
             host_defense,
             part_attack,
-            part_defense
+            part_defense,
         })
     }
 }
@@ -141,11 +141,22 @@ pub mod callback {
     use anyhow::anyhow;
     use rand::Rng;
     use teloxide::{
-        payloads::{AnswerCallbackQuerySetters, EditMessageReplyMarkupSetters, EditMessageTextInlineSetters}, prelude::{Request, Requester}, sugar::bot::BotMessagesExt, types::CallbackQuery, Bot
+        payloads::{
+            AnswerCallbackQuerySetters, EditMessageReplyMarkupInlineSetters,
+            EditMessageReplyMarkupSetters, EditMessageTextInlineSetters,
+        },
+        prelude::{Request, Requester},
+        sugar::bot::BotMessagesExt,
+        types::CallbackQuery,
+        Bot,
     };
 
     use crate::{
-        config::consts, controllers::inventory, db::{dueldb, economydb, pigdb, userdb}, handlers::keyboard, StoragePool
+        config::consts,
+        controllers::inventory,
+        db::{dueldb, economydb, pigdb, userdb},
+        handlers::keyboard,
+        StoragePool,
     };
 
     use super::{
@@ -192,13 +203,13 @@ pub mod callback {
         if let Err(why) = economydb::sub_money(pool, part_id, bid).await {
             eprintln!("Error sub money from part: {}", why);
             bot.answer_callback_query(&q.id).await?;
-            return Ok(())
+            return Ok(());
         }
-        
+
         // Creeate a duel in table
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
         let part_pig = pigdb::pig_by_userid(pool, part_id).await?;
-        
+
         dueldb::create_duel(
             pool,
             host_id,
@@ -213,7 +224,7 @@ pub mod callback {
         )
         .await?;
         println!("up here");
-        
+
         // Setup message, add reply markup
 
         let msg = format!(
@@ -221,7 +232,9 @@ pub mod callback {
             host_pig.weight, part_pig.weight
         );
         bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-            .reply_markup(keyboard::make_duel_action(pool, host_id, part_id.clone(), Duelist::Host).await)
+            .reply_markup(
+                keyboard::make_duel_action(pool, host_id, part_id.clone(), Duelist::Host, 0).await,
+            )
             .await?;
 
         Ok(())
@@ -243,13 +256,13 @@ pub mod callback {
         let duelist = Duelist::from_str(data[2])?;
 
         // Track health and etc
-        
+
         let mut duel: Duel = dueldb::duel(pool, host_id).await?;
-        
+
         // Get info about participants pigs
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
         let part_pig = pigdb::pig_by_userid(pool, q.from.id.0).await?;
-        
+
         match duelist {
             // Act based on who it is
             Duelist::Host => {
@@ -299,7 +312,16 @@ pub mod callback {
                 dueldb::update_duel(pool, &duel).await?;
 
                 bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-                    .reply_markup(keyboard::make_duel_action(pool, host_id, duel.part_id as u64, Duelist::Part).await)
+                    .reply_markup(
+                        keyboard::make_duel_action(
+                            pool,
+                            host_id,
+                            duel.part_id as u64,
+                            Duelist::Part,
+                            0,
+                        )
+                        .await,
+                    )
                     .await?;
             }
             Duelist::Part => {
@@ -348,9 +370,17 @@ pub mod callback {
                 dueldb::update_duel(pool, &duel).await?;
 
                 bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-                    .reply_markup(keyboard::make_duel_action(pool, host_id, duel.part_id as u64, Duelist::Host).await)
+                    .reply_markup(
+                        keyboard::make_duel_action(
+                            pool,
+                            host_id,
+                            duel.part_id as u64,
+                            Duelist::Host,
+                            0,
+                        )
+                        .await,
+                    )
                     .await?;
-                
             }
         }
 
@@ -369,11 +399,14 @@ pub mod callback {
         let invslot_id = data[2].parse::<u64>()?;
 
         if q.from.id.0 != user_id {
-            bot.answer_callback_query(&q.id).text("Не ваша очередь").send().await?;
+            bot.answer_callback_query(&q.id)
+                .text("Не ваша очередь")
+                .send()
+                .await?;
         }
 
         let mut duel: Duel = dueldb::duel(pool, host_id).await?;
-        
+
         match inventory::use_item(pool, invslot_id).await {
             Ok((buff_type, power)) => {
                 if buff_type == "attack" {
@@ -391,14 +424,38 @@ pub mod callback {
                 }
                 dueldb::update_duel(pool, &duel).await?;
 
-                bot.answer_callback_query(&q.id).text("Успешно использовано").send().await?;
+                bot.answer_callback_query(&q.id)
+                    .text("Успешно использовано")
+                    .send()
+                    .await?;
             }
             Err(why) => {
                 eprintln!("Err using item: {}", why);
-                bot.answer_callback_query(&q.id).text("Предмет закончился. Ошибка.").send().await?;
+                bot.answer_callback_query(&q.id)
+                    .text("Предмет закончился. Ошибка.")
+                    .send()
+                    .await?;
             }
         }
-        
+
+        Ok(())
+    }
+
+    pub async fn callback_switch_page(
+        bot: &Bot,
+        q: &CallbackQuery,
+        data: &[&str], // &host_id.to_string(), &part_id.to_string(), &duelist.to_string(), offset
+        pool: &StoragePool,
+    ) -> anyhow::Result<()> {
+        let host_id = data[0].parse::<u64>()?;
+        let part_id = data[1].parse::<u64>()?;
+        let duelist = Duelist::from_str(data[2])?;
+        let offset = data[3].parse::<u32>()?;
+
+        bot.edit_message_reply_markup_inline(q.inline_message_id.as_ref().unwrap())
+            .reply_markup(keyboard::make_duel_action(pool, host_id, part_id, duelist, offset).await)
+            .send()
+            .await?;
         Ok(())
     }
 }

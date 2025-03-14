@@ -1,9 +1,6 @@
 use crate::{controllers::inventory::InventorySlot, StoragePool};
-
-pub async fn invslot(
-    pool: &StoragePool,
-    invslot_id: u64
-) -> anyhow::Result<InventorySlot> {
+use sqlx::Row;
+pub async fn invslot(pool: &StoragePool, invslot_id: u64) -> anyhow::Result<InventorySlot> {
     println!("invslot id {}", invslot_id);
     let row = sqlx::query("SELECT * FROM inventory_slot_view WHERE id = ?")
         .bind(invslot_id)
@@ -12,12 +9,24 @@ pub async fn invslot(
     Ok(InventorySlot::from_mysql_row(row)?)
 }
 
+pub async fn invslots_count(pool: &StoragePool, user_id: u64) -> anyhow::Result<u32> {
+    let count = sqlx::query("SELECT COUNT(*) FROM inventory_slot_view WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_one(&pool.mysql_pool)
+        .await?;
+
+    let count: i64 = count.try_get(0)?;
+    Ok(count as u32)
+}
+
 pub async fn invslots(
     pool: &StoragePool,
     user_id: u64,
+    offset: u32,
 ) -> anyhow::Result<Vec<InventorySlot>> {
-    let rows = sqlx::query("SELECT * FROM inventory_slot_view WHERE user_id = ? LIMIT 5")
+    let rows = sqlx::query("SELECT * FROM inventory_slot_view WHERE user_id = ? LIMIT 4 OFFSET ?")
         .bind(user_id)
+        .bind(offset)
         .fetch_all(&pool.mysql_pool)
         .await?;
 
@@ -28,7 +37,6 @@ pub async fn invslots(
 
     Ok(slots)
 }
-
 
 pub async fn item_exists(pool: &StoragePool, item_id: u64, user_id: u64) -> bool {
     match sqlx::query("SELECT * FROM inventory WHERE user_id = ? AND item_id = ?")
@@ -70,8 +78,6 @@ pub async fn decrease_item_usages(
     Ok(())
 }
 
-
-
 pub async fn set_item_usages(
     pool: &StoragePool,
     item_id: i64,
@@ -102,16 +108,10 @@ pub async fn add_item(
     Ok(())
 }
 
-pub async fn delete_item(
-    pool: &StoragePool,
-    invslot_id: u64,
-) -> anyhow::Result<()> {
+pub async fn delete_item(pool: &StoragePool, invslot_id: u64) -> anyhow::Result<()> {
     sqlx::query("DELETE FROM inventory WHERE id = ?")
         .bind(invslot_id)
         .execute(&pool.mysql_pool)
         .await?;
     Ok(())
 }
-
-
-

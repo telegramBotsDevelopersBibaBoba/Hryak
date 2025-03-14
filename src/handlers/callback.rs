@@ -50,8 +50,15 @@ pub async fn filter_callback_commands(
             CallbackCommands::DuelAction => {
                 controllers::duel::callback::callback_duel_action(&bot, &q, &data_vec[1..], &pool)
                     .boxed()
-            },
-            CallbackCommands::BuffUse => controllers::duel::callback::callback_use_buff(&bot, &q, &data_vec[1..], &pool).boxed()
+            }
+            CallbackCommands::BuffUse => {
+                controllers::duel::callback::callback_use_buff(&bot, &q, &data_vec[1..], &pool)
+                    .boxed()
+            }
+            CallbackCommands::SwitchPage => {
+                controllers::duel::callback::callback_switch_page(&bot, &q, &data_vec[1..], &pool)
+                    .boxed()
+            }
         },
         Err(why) => callback_error(&bot, &q).boxed(),
     };
