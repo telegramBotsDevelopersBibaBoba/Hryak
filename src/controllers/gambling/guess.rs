@@ -1,5 +1,4 @@
 use rand::{rng, Rng};
-use sqlx::MySqlPool;
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 
@@ -50,7 +49,9 @@ pub async fn guess_number(
                 }
             };
 
-            if let Err(why) = economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await {
+            if let Err(why) =
+                economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await
+            {
                 eprintln!("Not enough money for guess: {}", why);
                 utils::send_msg(&bot, &msg, "Недостаточно денег!").await?;
                 dialogue.exit().await?;

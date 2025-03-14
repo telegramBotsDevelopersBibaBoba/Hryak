@@ -1,9 +1,5 @@
 use anyhow::anyhow;
-use sqlx::{
-    mysql::MySqlRow,
-    types::chrono::{DateTime, Utc},
-    MySqlPool, Row,
-};
+use sqlx::types::chrono::Utc;
 use teloxide::{types::Message, Bot};
 
 use crate::{
@@ -15,28 +11,28 @@ use crate::{config::utils, db::userdb};
 
 use super::shop::{Offer, OfferType};
 
-const DEFAULT_BALANCE: f64 = 10.0;
-const DEFAULT_DAILY_INCOME: f64 = 10.0;
-pub struct BankAccount {
-    balance: f64,
-    daily_income: f64,
-    income_time: DateTime<Utc>,
-}
+// const DEFAULT_BALANCE: f64 = 10.0;
+// const DEFAULT_DAILY_INCOME: f64 = 10.0;
+// pub struct BankAccount {
+//     balance: f64,
+//     daily_income: f64,
+//     income_time: DateTime<Utc>,
+// }
 
-impl BankAccount {
-    fn from_mysql_row(row: &MySqlRow) -> anyhow::Result<Self> {
-        // Предполагаем, что в таблице есть поля для bank_account
-        let balance = row.try_get::<f64, _>("balance")?;
-        let daily_income = row.try_get::<f64, _>("daily_income")?;
-        let income_time = row.try_get::<DateTime<Utc>, _>("income_time")?;
+// impl BankAccount {
+//     fn from_mysql_row(row: &MySqlRow) -> anyhow::Result<Self> {
+//         // Предполагаем, что в таблице есть поля для bank_account
+//         let balance = row.try_get::<f64, _>("balance")?;
+//         let daily_income = row.try_get::<f64, _>("daily_income")?;
+//         let income_time = row.try_get::<DateTime<Utc>, _>("income_time")?;
 
-        Ok(Self {
-            balance,
-            daily_income,
-            income_time,
-        })
-    }
-}
+//         Ok(Self {
+//             balance,
+//             daily_income,
+//             income_time,
+//         })
+//     }
+// }
 type HandlerResult = anyhow::Result<()>;
 pub async fn economy_handle(
     bot: Bot,
@@ -96,7 +92,6 @@ pub async fn economy_handle(
 }
 
 pub mod inline {
-    use sqlx::MySqlPool;
     use teloxide::{
         payloads::AnswerInlineQuerySetters,
         prelude::Requester,

@@ -1,5 +1,3 @@
-use sqlx::MySqlPool;
-
 use crate::{controllers::duel::Duel, StoragePool};
 
 pub async fn create_duel(
@@ -49,7 +47,7 @@ pub async fn duel(pool: &StoragePool, host_id: u64) -> anyhow::Result<Duel> {
 }
 
 pub async fn update_duel(pool: &StoragePool, duel: &Duel) -> anyhow::Result<()> {
-    let row = sqlx::query("UPDATE duels SET host_hp = ?, part_hp = ?, host_attack = ?, host_defense = ?, part_attack = ?, part_defense = ? WHERE host_id = ?")
+    sqlx::query("UPDATE duels SET host_hp = ?, part_hp = ?, host_attack = ?, host_defense = ?, part_attack = ?, part_defense = ? WHERE host_id = ?")
         .bind(duel.host_hp)
         .bind(duel.part_hp)
         .bind(duel.host_attack)

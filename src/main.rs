@@ -1,30 +1,20 @@
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 
-use config::{commands, utils};
+use config::commands;
 
 use controllers::gambling::guess::GuessState;
 use controllers::gambling::pigrace::PigRaceState;
 use controllers::gambling::treasurehunt::TreasureState;
 use controllers::gambling::{self, GambleCommands};
-use controllers::shop::{self, OfferType};
-use handlers::keyboard;
+use controllers::shop::{self};
+
 use r2d2::Pool;
-use rand::{rng, Rng};
 use redis::Client;
 use sqlx::MySqlPool;
 use teloxide::dispatching::dialogue::{self, InMemStorage};
 use teloxide::dispatching::UpdateHandler;
-use teloxide::dptree::{filter, filter_async};
-use teloxide::utils::command::BotCommands;
-use teloxide::{
-    payloads::EditMessageText,
-    prelude::*,
-    sugar::bot::BotMessagesExt,
-    types::{
-        InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
-        ParseMode,
-    },
-};
+use teloxide::dptree::filter_async;
+use teloxide::prelude::*;
 
 mod config;
 mod controllers;

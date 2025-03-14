@@ -1,7 +1,4 @@
-use sqlx::MySqlPool;
-use teloxide::types::{
-    InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
-};
+use teloxide::types::{InlineQueryResultArticle, InputMessageContent, InputMessageContentText};
 
 use crate::controllers::{pig, shop};
 
@@ -41,24 +38,7 @@ pub fn inline_help_article() -> InlineQueryResultArticle {
     .reply_markup(keyboard::make_more_info_keyboard()) // Showing a 'keyboard' with all the additional inline queries
 }
 
-pub fn inline_guessing_game_article() -> InlineQueryResultArticle {
-    InlineQueryResultArticle::new(
-        "guessing_game",
-        "Игра 'Угадывание числа'",
-        InputMessageContent::Text(InputMessageContentText::new("Игра начинается...")),
-    )
-    .description("Нажми, чтобы начать игру")
-    .thumbnail_url(
-        "https://thumbs.dreamstime.com/z/lot-pigs-d-rendered-illustration-127843482.jpg"
-            .parse()
-            .unwrap(),
-    )
-}
-
-pub async fn inline_shop_article(
-    q: &InlineQuery,
-    pool: &StoragePool,
-) -> anyhow::Result<InlineQueryResultArticle> {
+pub async fn inline_shop_article(pool: &StoragePool) -> anyhow::Result<InlineQueryResultArticle> {
     let offers = shop::get_daily_offers();
 
     let (kb, text) = keyboard::make_shop(&offers, pool).await?;
@@ -116,8 +96,8 @@ pub async fn inline_duel_article(
 
         let n_money = make_article("not_enough_money",
             "Ошибка!",
-            "Недостаточно денег для создания дуэли!",
-            "Недостаточно денег для создания дуэли!",
+            message,
+            message,
             "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig".into());
 
         return Ok(n_money);

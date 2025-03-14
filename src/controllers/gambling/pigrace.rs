@@ -1,5 +1,5 @@
 use rand::Rng;
-use sqlx::MySqlPool;
+
 use std::fmt::{self};
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, types::Message, Bot};
@@ -69,7 +69,9 @@ pub async fn race_receive_bid(
                     return Ok(());
                 }
             };
-            if let Err(why) = economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await {
+            if let Err(why) =
+                economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await
+            {
                 eprintln!("Not enough money for guess: {}", why);
                 utils::send_msg(&bot, &msg, "Недостаточно денег!").await?;
                 dialogue.exit().await?;
@@ -197,8 +199,7 @@ pub async fn race_receive_number(
             let result_msg = if user_chose_winner {
                 let winnings = bid * RACE_BID_MULTIPLIER; // Коэффициент выигрыша
                                                           // Здесь можно обновить баланс в базе данных (pool)
-                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings)
-                    .await?;
+                economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings).await?;
                 format!(
                     "Победила свинья {}! Ты выиграл {}$!",
                     winner.name,

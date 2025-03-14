@@ -1,10 +1,6 @@
-use rand::Rng;
 use sqlx::{mysql::MySqlRow, Row};
 
-use crate::{
-    db::{economydb, pigdb, userdb},
-    StoragePool,
-};
+use crate::{db::pigdb, StoragePool};
 
 pub const DEFAULT_WEIGHT: f64 = 50.0;
 pub const DEFAULT_ATTACK: f64 = 5.0;
@@ -89,12 +85,11 @@ pub mod inline {
 }
 
 pub mod feedback {
-    use teloxide::{types::ChosenInlineResult, Bot};
+    use teloxide::types::ChosenInlineResult;
 
     use crate::{db::pigdb, StoragePool};
 
     pub async fn feedback_rename_hryak(
-        bot: Bot,
         q: &ChosenInlineResult,
         args: &[&str],
         pool: &StoragePool,

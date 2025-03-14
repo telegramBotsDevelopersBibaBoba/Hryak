@@ -1,5 +1,5 @@
 use strum::{Display, EnumString};
-use teloxide::utils::command::{self, BotCommands};
+use teloxide::utils::command::BotCommands;
 #[derive(Display, EnumString)]
 pub enum InlineCommands {
     // Single-word commands

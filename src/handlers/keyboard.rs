@@ -1,7 +1,6 @@
 use crate::controllers::duel::DuelActionType;
 use crate::controllers::{duel::Duelist, shop::OfferType};
 use crate::db::{inventorydb, shopdb};
-use sqlx::MySqlPool;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use crate::{ser_command, StoragePool};

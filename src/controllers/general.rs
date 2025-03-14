@@ -1,4 +1,3 @@
-use sqlx::MySqlPool;
 use teloxide::{
     prelude::Requester,
     types::{InlineQuery, Message, Update},

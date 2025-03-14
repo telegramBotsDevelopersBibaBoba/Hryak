@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
-use rand::{rng, Rng};
-use sqlx::MySqlPool;
+use rand::Rng;
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 
@@ -102,8 +101,7 @@ pub async fn treasure_receive_bid(
                 }
             };
 
-            if let Err(why) =
-                economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await
+            if let Err(_) = economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await
             {
                 utils::send_msg(&bot, &msg, "Недостаточно денег!").await?;
                 dialogue.exit().await?;
@@ -177,7 +175,6 @@ pub async fn location_chosen(
 
             let chosen_location = &locations[chosen_id];
             let result = simulate_treasure_hunt(chosen_location, bid);
-
 
             match result {
                 TreasureResult::Coins(amount) => {

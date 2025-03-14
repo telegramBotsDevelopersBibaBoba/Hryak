@@ -1,20 +1,15 @@
-use std::{str::FromStr, time::Duration};
+use std::str::FromStr;
 
 use crate::{
-    config::consts,
-    controllers::{self, shop::Offer, user},
+    controllers::{self},
     StoragePool,
 };
-use anyhow::anyhow;
+
 use futures::FutureExt;
 
 use teloxide::{
-    payloads::AnswerCallbackQuerySetters,
-    prelude::{Request, Requester},
-    types::CallbackQuery,
-    Bot, RequestError,
+    payloads::AnswerCallbackQuerySetters, prelude::Requester, types::CallbackQuery, Bot,
 };
-use tokio::time::sleep;
 
 use crate::{config::commands::CallbackCommands, deser_command};
 type HandlerResult = anyhow::Result<()>;
@@ -60,7 +55,7 @@ pub async fn filter_callback_commands(
                     .boxed()
             }
         },
-        Err(why) => callback_error(&bot, &q).boxed(),
+        Err(_) => callback_error(&bot, &q).boxed(),
     };
     let resp = function.await;
 

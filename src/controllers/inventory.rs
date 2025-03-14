@@ -1,8 +1,7 @@
-use anyhow::anyhow;
 use sqlx::mysql::MySqlRow;
-use sqlx::{MySqlPool, Row};
+use sqlx::Row;
 
-use crate::db::{dueldb, inventorydb};
+use crate::db::inventorydb;
 use crate::db::shopdb::get_usages_buff;
 use crate::StoragePool;
 

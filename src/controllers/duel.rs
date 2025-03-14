@@ -1,7 +1,7 @@
 use std::{fmt::Display, ops::RangeInclusive, str::FromStr};
 
 use anyhow::anyhow;
-use sqlx::{mysql::MySqlRow, MySqlPool, Row};
+use sqlx::{mysql::MySqlRow, Row};
 
 use crate::{db::economydb, StoragePool};
 
@@ -108,7 +108,6 @@ pub async fn proccess_duel_results(
 }
 
 pub mod inline {
-    use sqlx::MySqlPool;
     use teloxide::{
         payloads::AnswerInlineQuerySetters,
         prelude::Requester,
@@ -137,17 +136,16 @@ pub mod inline {
 }
 
 pub mod callback {
-    use std::{str::FromStr, time::Duration};
+    use std::str::FromStr;
 
     use anyhow::anyhow;
     use rand::Rng;
     use teloxide::{
         payloads::{
             AnswerCallbackQuerySetters, EditMessageReplyMarkupInlineSetters,
-            EditMessageReplyMarkupSetters, EditMessageTextInlineSetters,
+            EditMessageTextInlineSetters,
         },
         prelude::{Request, Requester},
-        sugar::bot::BotMessagesExt,
         types::CallbackQuery,
         Bot,
     };

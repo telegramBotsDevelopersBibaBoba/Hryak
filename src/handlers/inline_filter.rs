@@ -4,9 +4,6 @@ use crate::config::commands::InlineAdvCommands;
 use crate::config::commands::InlineCommands;
 use crate::config::consts;
 use crate::controllers;
-use crate::controllers::user;
-use crate::db::pigdb;
-use crate::db::userdb;
 use crate::handlers::articles;
 use crate::StoragePool;
 use futures::FutureExt;
@@ -15,7 +12,7 @@ use teloxide::prelude::Request;
 use teloxide::{
     prelude::Requester,
     types::{InlineQuery, InlineQueryResult},
-    Bot, RequestError,
+    Bot,
 };
 type HandlerResult = anyhow::Result<()>;
 
@@ -74,27 +71,22 @@ pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: StoragePool)
     Ok(())
 }
 
-async fn inline_error(
-    bot: Bot,
-    q: &InlineQuery,
-    descr: &str,
-    response: &str,
-) -> anyhow::Result<()> {
-    let error = articles::make_article(
-        "error_some",
-        "Ошибка!",
-        response,
-        response,
-        Some(
-            "https://cdn4.vectorstock.com/i/1000x1000/94/33/scared-pig-running-vector-22489433.jpg",
-        ),
-    );
+// async fn inline_error(bot: Bot, q: &InlineQuery, response: &str) -> anyhow::Result<()> {
+//     let error = articles::make_article(
+//         "error_some",
+//         "Ошибка!",
+//         response,
+//         response,
+//         Some(
+//             "https://cdn4.vectorstock.com/i/1000x1000/94/33/scared-pig-running-vector-22489433.jpg",
+//         ),
+//     );
 
-    let articles = vec![InlineQueryResult::Article(error)];
+//     let articles = vec![InlineQueryResult::Article(error)];
 
-    bot.answer_inline_query(&q.id, articles).send().await?; // Showing all suitable inline buttons
-    Ok(())
-}
+//     bot.answer_inline_query(&q.id, articles).send().await?; // Showing all suitable inline buttons
+//     Ok(())
+// }
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_info_article(pool, q.from.id.0).await?;
@@ -106,7 +98,7 @@ async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> a
     )
     .await?;
     let help = articles::inline_help_article();
-    let shop = articles::inline_shop_article(q, pool).await?;
+    let shop = articles::inline_shop_article(pool).await?;
     let balance = articles::inline_balance_article(pool, q.from.id.0).await?;
 
     // Showing several articles at once

@@ -282,7 +282,6 @@ pub async fn generate_new_offers() {
 
 pub mod inline {
     use teloxide::{
-        payloads::AnswerInlineQuerySetters,
         prelude::Requester,
         types::{InlineQuery, InlineQueryResult},
         Bot,
@@ -291,7 +290,7 @@ pub mod inline {
     use crate::{handlers::articles, StoragePool};
 
     pub async fn inline_shop(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> anyhow::Result<()> {
-        let shop = articles::inline_shop_article(q, pool).await?;
+        let shop = articles::inline_shop_article(pool).await?;
 
         let articles = vec![InlineQueryResult::Article(shop)];
 
@@ -302,7 +301,6 @@ pub mod inline {
 
 pub mod callback {
     use anyhow::anyhow;
-    use sqlx::MySqlPool;
     use teloxide::{
         payloads::AnswerCallbackQuerySetters, prelude::Requester, types::CallbackQuery, Bot,
     };
