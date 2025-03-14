@@ -1,3 +1,4 @@
+pub mod dueldb;
 pub mod economydb;
 pub mod gamblingdb;
 pub mod inventorydb;

@@ -1,32 +1,31 @@
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 
-use config::{commands, utils};
+use config::commands;
 
 use controllers::gambling::guess::GuessState;
 use controllers::gambling::pigrace::PigRaceState;
+use controllers::gambling::treasurehunt::TreasureState;
 use controllers::gambling::{self, GambleCommands};
-use controllers::shop::{self, OfferType};
-use handlers::keyboard;
-use rand::{rng, Rng};
+use controllers::shop::{self};
+
+use r2d2::Pool;
+use redis::Client;
 use sqlx::MySqlPool;
 use teloxide::dispatching::dialogue::{self, InMemStorage};
 use teloxide::dispatching::UpdateHandler;
-use teloxide::dptree::{filter, filter_async};
-use teloxide::utils::command::BotCommands;
-use teloxide::{
-    payloads::EditMessageText,
-    prelude::*,
-    sugar::bot::BotMessagesExt,
-    types::{
-        InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
-        ParseMode,
-    },
-};
+use teloxide::dptree::filter_async;
+use teloxide::prelude::*;
 
 mod config;
 mod controllers;
 mod db;
 mod handlers;
+
+#[derive(Clone, Debug)]
+struct StoragePool {
+    mysql_pool: MySqlPool,
+    redis_pool: Pool<Client>,
+}
 
 #[tokio::main]
 async fn main() {
@@ -35,7 +34,7 @@ async fn main() {
 
     let con_str = "mysql://klewy:root@localhost:3306/hryak";
 
-    let pool = sqlx::mysql::MySqlPoolOptions::new()
+    let mysql_pool = sqlx::mysql::MySqlPoolOptions::new()
         .max_connections(10)
         .acquire_timeout(Duration::from_secs(5))
         .connect(&con_str)
@@ -44,13 +43,22 @@ async fn main() {
 
     let bot = Bot::from_env(); // Setting up bot from TELOXIDE_TOKEN env variable (P.S 'export TELOXIDE_TOKEN=<token>' in terminal)
 
+    let redis_connection = redis::Client::open("redis://127.0.0.1").unwrap();
+    let redis_pool = r2d2::Pool::builder().build(redis_connection).unwrap();
+
+    let storage_pool = StoragePool {
+        mysql_pool,
+        redis_pool,
+    };
+
     tokio::spawn(shop::generate_new_offers());
 
     Dispatcher::builder(bot, scheme())
         .dependencies(dptree::deps![
-            pool,
+            storage_pool,
             InMemStorage::<PigRaceState>::new(),
-            InMemStorage::<GuessState>::new()
+            InMemStorage::<GuessState>::new(),
+            InMemStorage::<TreasureState>::new()
         ])
         .enable_ctrlc_handler()
         .build()
@@ -82,11 +90,6 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
         dptree::case![GuessState::Start]
             .branch(dptree::case![GambleCommands::Guess].endpoint(gambling::guess::guess_bid)),
     );
-
-    let race_commands = teloxide::filter_command::<GambleCommands, _>().branch(
-        dptree::case![PigRaceState::Start]
-            .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
-    );
     let guess_handler = Update::filter_message()
         .branch(guess_commands)
         .branch(dptree::case![GuessState::ReceiveBid].endpoint(gambling::guess::guess_number))
@@ -94,6 +97,12 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
             dptree::case![GuessState::ReceiveNumber { bid }]
                 .endpoint(gambling::guess::guess_number_entered),
         );
+
+    let race_commands = teloxide::filter_command::<GambleCommands, _>().branch(
+        dptree::case![PigRaceState::Start]
+            .branch(dptree::case![GambleCommands::Race].endpoint(gambling::pigrace::race_bid)),
+    );
+
     let pigrace_handler = Update::filter_message()
         .branch(race_commands)
         .branch(
@@ -103,10 +112,31 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
             dptree::case![PigRaceState::ReceiveChosenPig { pigs, bid }]
                 .endpoint(gambling::pigrace::race_receive_number),
         );
+
+    let treasure_commands = teloxide::filter_command::<GambleCommands, _>().branch(
+        dptree::case![TreasureState::Start].branch(
+            dptree::case![GambleCommands::TreasureHunt]
+                .endpoint(gambling::treasurehunt::treasure_bid),
+        ),
+    );
+    let treasure_handler = Update::filter_message()
+        .branch(treasure_commands)
+        .branch(
+            dptree::case![TreasureState::ReceiveBid]
+                .endpoint(gambling::treasurehunt::treasure_receive_bid),
+        )
+        .branch(
+            dptree::case![TreasureState::ReceiveLocation { bid, locations }]
+                .endpoint(gambling::treasurehunt::location_chosen),
+        );
+
     let guess_dialogue =
         dialogue::enter::<Update, InMemStorage<GuessState>, GuessState, _>().branch(guess_handler);
     let pigrace_dialogue = dialogue::enter::<Update, InMemStorage<PigRaceState>, PigRaceState, _>()
         .branch(pigrace_handler);
+    let treasure_dialogue =
+        dialogue::enter::<Update, InMemStorage<TreasureState>, TreasureState, _>()
+            .branch(treasure_handler);
 
     dptree::entry()
         .branch(general_handler)
@@ -116,4 +146,5 @@ fn scheme() -> UpdateHandler<anyhow::Error> {
         .branch(feedback_handler)
         .branch(guess_dialogue)
         .branch(pigrace_dialogue)
+        .branch(treasure_dialogue)
 }

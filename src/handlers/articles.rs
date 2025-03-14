@@ -1,17 +1,15 @@
-use sqlx::MySqlPool;
-use teloxide::types::{
-    InlineQuery, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
-};
+use teloxide::types::{InlineQueryResultArticle, InputMessageContent, InputMessageContentText};
 
 use crate::controllers::{pig, shop};
 
 use crate::db::economydb;
 use crate::handlers::keyboard;
+use crate::StoragePool;
 
 use super::keyboard::make_duel;
 
 pub async fn inline_hryak_info_article(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let pig = pig::get_pig(pool, user_id).await?;
@@ -40,27 +38,10 @@ pub fn inline_help_article() -> InlineQueryResultArticle {
     .reply_markup(keyboard::make_more_info_keyboard()) // Showing a 'keyboard' with all the additional inline queries
 }
 
-pub fn inline_guessing_game_article() -> InlineQueryResultArticle {
-    InlineQueryResultArticle::new(
-        "guessing_game",
-        "Игра 'Угадывание числа'",
-        InputMessageContent::Text(InputMessageContentText::new("Игра начинается...")),
-    )
-    .description("Нажми, чтобы начать игру")
-    .thumbnail_url(
-        "https://thumbs.dreamstime.com/z/lot-pigs-d-rendered-illustration-127843482.jpg"
-            .parse()
-            .unwrap(),
-    )
-}
-
-pub async fn inline_shop_article(
-    q: &InlineQuery,
-    pool: &MySqlPool,
-) -> anyhow::Result<InlineQueryResultArticle> {
+pub async fn inline_shop_article(pool: &StoragePool) -> anyhow::Result<InlineQueryResultArticle> {
     let offers = shop::get_daily_offers();
 
-    let (kb, text) = keyboard::make_shop(&offers, &pool).await?;
+    let (kb, text) = keyboard::make_shop(&offers, pool).await?;
 
     let shop = InlineQueryResultArticle::new(
         "shop".to_string(),
@@ -104,7 +85,7 @@ pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
 }
 
 pub async fn inline_duel_article(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     duel_host_id: u64,
     duel_host_mention: String,
     bid: f64,
@@ -115,8 +96,8 @@ pub async fn inline_duel_article(
 
         let n_money = make_article("not_enough_money",
             "Ошибка!",
-            "Недостаточно денег для создания дуэли!",
-            "Недостаточно денег для создания дуэли!",
+            message,
+            message,
             "https://avatars.mds.yandex.net/get-shedevrum/11552302/b56a5e87c2af11ee8ba7be62f04505c7/orig".into());
 
         return Ok(n_money);
@@ -140,7 +121,7 @@ pub async fn inline_duel_article(
 }
 
 pub async fn inline_balance_article(
-    pool: &MySqlPool,
+    pool: &StoragePool,
     user_id: u64,
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let balance = economydb::balance(pool, user_id).await?;
@@ -148,7 +129,7 @@ pub async fn inline_balance_article(
 
     let message = format!(
         "Ваш баланс: {}$\nВаш ежедневный доход: {}$",
-        balance, daily_income.0
+        balance, daily_income
     );
 
     let balance_article = InlineQueryResultArticle::new(
