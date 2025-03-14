@@ -21,6 +21,7 @@ pub struct Duel {
     pub bid: f64,
 }
 
+#[derive(PartialEq)]
 pub enum Duelist {
     Host,
     Part,
@@ -153,7 +154,7 @@ pub mod callback {
 
     use crate::{
         config::consts,
-        controllers::inventory,
+        controllers::{inventory, pig::Pig},
         db::{dueldb, economydb, pigdb, userdb},
         handlers::keyboard,
         StoragePool,
@@ -223,9 +224,6 @@ pub mod callback {
             bid,
         )
         .await?;
-        println!("up here");
-
-        // Setup message, add reply markup
 
         let msg = format!(
             "Очередь: хоста\nЗдоровье хоста: {} хп\nЗдоровье участника: {} hp",
@@ -246,140 +244,28 @@ pub mod callback {
         data: &[&str],
         pool: &StoragePool,
     ) -> anyhow::Result<()> {
-        /*
-        TODO 1: Better algo for defense (maybe)
-        */
-
-        // Parse all callback data
+        // Парсинг данных из callback
         let host_id = data[0].trim().parse::<u64>()?;
         let action_type = DuelActionType::from_str(data[1])?;
         let duelist = Duelist::from_str(data[2])?;
 
-        // Track health and etc
-
-        let mut duel: Duel = dueldb::duel(pool, host_id).await?;
-
-        // Get info about participants pigs
+        let mut duel = dueldb::duel(pool, host_id).await?;
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
         let part_pig = pigdb::pig_by_userid(pool, q.from.id.0).await?;
 
         match duelist {
-            // Act based on who it is
             Duelist::Host => {
                 if q.from.id.0 != host_id {
-                    bot.answer_callback_query(&q.id)
-                        .text(WRONG_ACTION_DOER)
-                        .send()
-                        .await?;
-                    return Ok(());
+                    return wrong_action(bot, q).await;
                 }
-                match action_type {
-                    DuelActionType::Attack => {
-                        duel.part_hp -=
-                            duel.host_attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
-
-                        if duel.part_hp <= 0.0 {
-                            // Host won
-                            let username = userdb::username(pool, host_id).await?;
-                            let msg = format!("@{} выиграл {}$", username, 2.0 * duel.bid);
-                            bot.edit_message_text_inline(
-                                q.inline_message_id.as_ref().unwrap(),
-                                msg,
-                            )
-                            .await?;
-
-                            proccess_duel_results(pool, host_id, duel.part_id as u64, duel.bid)
-                                .await?;
-
-                            dueldb::remove_duel(pool, host_id).await?; // Remove duel from database so the user can start a new one
-                                                                       // (P.S duels are auto deleted every 10 minutes (if created_at date is older than 10 mins))
-                            return Ok(());
-                        }
-                    }
-                    DuelActionType::Defense => {
-                        duel.host_hp +=
-                            duel.host_defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
-                        if duel.host_hp > host_pig.weight {
-                            duel.host_hp = host_pig.weight;
-                        }
-                    }
-                }
-                let msg = format!(
-                    "Очередь участника\nЗдоровье хоста: {} хп\nЗдоровье участника: {} хп",
-                    (duel.host_hp * 100.0).floor() / 100.0,
-                    (duel.part_hp * 100.0).floor() / 100.0
-                );
-                dueldb::update_duel(pool, &duel).await?;
-
-                bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-                    .reply_markup(
-                        keyboard::make_duel_action(
-                            pool,
-                            host_id,
-                            duel.part_id as u64,
-                            Duelist::Part,
-                            0,
-                        )
-                        .await,
-                    )
+                handle_host_action(bot, q, pool, host_id, &mut duel, &host_pig, action_type)
                     .await?;
             }
             Duelist::Part => {
                 if q.from.id.0 != duel.part_id as u64 {
-                    bot.answer_callback_query(&q.id)
-                        .text(WRONG_ACTION_DOER)
-                        .send()
-                        .await?;
-                    return Ok(());
+                    return wrong_action(bot, q).await;
                 }
-                match action_type {
-                    DuelActionType::Attack => {
-                        duel.host_hp -=
-                            duel.part_attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
-
-                        if duel.host_hp <= 0.0 {
-                            // Part won
-                            let username = userdb::username(pool, duel.part_id as u64).await?;
-                            let msg = format!("@{} выиграл {}$", username, 2.0 * duel.bid);
-                            bot.edit_message_text_inline(
-                                q.inline_message_id.as_ref().unwrap(),
-                                msg,
-                            )
-                            .await?;
-
-                            proccess_duel_results(pool, duel.part_id as u64, host_id, duel.bid)
-                                .await?;
-
-                            dueldb::remove_duel(pool, host_id).await?;
-                            return Ok(());
-                        }
-                    }
-                    DuelActionType::Defense => {
-                        duel.part_hp +=
-                            duel.part_defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
-                        if duel.part_hp > part_pig.weight {
-                            duel.part_hp = part_pig.weight;
-                        }
-                    }
-                }
-                let msg = format!(
-                    "Очередь хоста\nЗдоровье хоста: {} хп\nЗдоровье участника: {} хп",
-                    (duel.host_hp * 100.0).floor() / 100.0,
-                    (duel.part_hp * 100.0).floor() / 100.0
-                );
-                dueldb::update_duel(pool, &duel).await?;
-
-                bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-                    .reply_markup(
-                        keyboard::make_duel_action(
-                            pool,
-                            host_id,
-                            duel.part_id as u64,
-                            Duelist::Host,
-                            0,
-                        )
-                        .await,
-                    )
+                handle_part_action(bot, q, pool, host_id, &mut duel, &part_pig, action_type)
                     .await?;
             }
         }
@@ -387,7 +273,126 @@ pub mod callback {
         Ok(())
     }
 
-    // &host_id.to_string(), &user_id.to_string(), &i.to_string())
+    async fn handle_host_action(
+        bot: &Bot,
+        q: &CallbackQuery,
+        pool: &StoragePool,
+        host_id: u64,
+        duel: &mut Duel,
+        host_pig: &Pig,
+        action_type: DuelActionType,
+    ) -> anyhow::Result<()> {
+        match action_type {
+            DuelActionType::Attack => {
+                duel.part_hp -= duel.host_attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
+                if duel.part_hp <= 0.0 {
+                    return process_victory(
+                        bot,
+                        q,
+                        pool,
+                        host_id,
+                        duel.part_id as u64,
+                        duel.bid,
+                        host_id,
+                    )
+                    .await;
+                }
+            }
+            DuelActionType::Defense => {
+                duel.host_hp += duel.host_defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
+                if duel.host_hp > host_pig.weight {
+                    duel.host_hp = host_pig.weight;
+                }
+            }
+        }
+
+        let msg = format!(
+            "Очередь участника\nЗдоровье хоста: {:.2} хп\nЗдоровье участника: {:.2} хп",
+            duel.host_hp, duel.part_hp
+        );
+        dueldb::update_duel(pool, duel).await?;
+        let keyboard =
+            keyboard::make_duel_action(pool, host_id, duel.part_id as u64, Duelist::Part, 0).await;
+        bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
+            .reply_markup(keyboard)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn handle_part_action(
+        bot: &Bot,
+        q: &CallbackQuery,
+        pool: &StoragePool,
+        host_id: u64,
+        duel: &mut Duel,
+        part_pig: &Pig,
+        action_type: DuelActionType,
+    ) -> anyhow::Result<()> {
+        match action_type {
+            DuelActionType::Attack => {
+                duel.host_hp -= duel.part_attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
+                if duel.host_hp <= 0.0 {
+                    return process_victory(
+                        bot,
+                        q,
+                        pool,
+                        duel.part_id as u64,
+                        host_id,
+                        duel.bid,
+                        host_id,
+                    )
+                    .await;
+                }
+            }
+            DuelActionType::Defense => {
+                duel.part_hp += duel.part_defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
+                if duel.part_hp > part_pig.weight {
+                    duel.part_hp = part_pig.weight;
+                }
+            }
+        }
+
+        let msg = format!(
+            "Очередь хоста\nЗдоровье хоста: {:.2} хп\nЗдоровье участника: {:.2} хп",
+            duel.host_hp, duel.part_hp
+        );
+        dueldb::update_duel(pool, duel).await?;
+        let keyboard =
+            keyboard::make_duel_action(pool, host_id, duel.part_id as u64, Duelist::Host, 0).await;
+        bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
+            .reply_markup(keyboard)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn process_victory(
+        bot: &Bot,
+        q: &CallbackQuery,
+        pool: &StoragePool,
+        winner_id: u64,
+        loser_id: u64,
+        bid: f64,
+        host_id: u64,
+    ) -> anyhow::Result<()> {
+        let username = userdb::username(pool, winner_id).await?;
+        let msg = format!("@{} выиграл {}$", username, 2.0 * bid);
+        bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
+            .await?;
+        proccess_duel_results(pool, winner_id, loser_id, bid).await?;
+        dueldb::remove_duel(pool, host_id).await?;
+        Ok(())
+    }
+
+    async fn wrong_action(bot: &Bot, q: &CallbackQuery) -> anyhow::Result<()> {
+        bot.answer_callback_query(&q.id)
+            .text(WRONG_ACTION_DOER)
+            .send()
+            .await?;
+        Ok(())
+    }
+
     pub async fn callback_use_buff(
         bot: &Bot,
         q: &CallbackQuery,
@@ -403,6 +408,7 @@ pub mod callback {
                 .text("Не ваша очередь")
                 .send()
                 .await?;
+            return Ok(());
         }
 
         let mut duel: Duel = dueldb::duel(pool, host_id).await?;
@@ -451,6 +457,16 @@ pub mod callback {
         let part_id = data[1].parse::<u64>()?;
         let duelist = Duelist::from_str(data[2])?;
         let offset = data[3].parse::<u32>()?;
+
+        if (duelist == Duelist::Host && q.from.id.0 != host_id)
+            || (duelist == Duelist::Part && q.from.id.0 != part_id)
+        {
+            bot.answer_callback_query(&q.id)
+                .text("Не ваша очередь")
+                .send()
+                .await?;
+            return Ok(());
+        }
 
         bot.edit_message_reply_markup_inline(q.inline_message_id.as_ref().unwrap())
             .reply_markup(keyboard::make_duel_action(pool, host_id, part_id, duelist, offset).await)

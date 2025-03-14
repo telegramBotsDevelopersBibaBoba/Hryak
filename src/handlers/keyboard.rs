@@ -102,14 +102,14 @@ pub async fn make_duel_action(
         rows.push(vec![button]);
     }
 
-    if invslots_len >= 0 || offset > 0 {
+    if rows.len() >= 2 && invslots_len > 4 {
         let left_offset = if offset as i32 - 4 < 0 {
             &0.to_string()
         } else {
             &(offset - 4).to_string()
         };
 
-        let right_offset = if offset + 4 > invslots_len - offset {
+        let right_offset = if offset + 4 > invslots_len {
             &offset.to_string()
         } else {
             &(offset + 4).to_string()
