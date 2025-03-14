@@ -105,9 +105,9 @@ pub async fn offer(
         OfferType::Buff => Offer::Buff(buff_offer(pool, item_id).await?),
     })
 }
-pub async fn get_usages_buff(pool: &StoragePool, item_id: u64) -> anyhow::Result<i32> {
+pub async fn get_usages_buff(pool: &StoragePool, invslot_id: u64) -> anyhow::Result<i32> {
     let row = sqlx::query("SELECT usages FROM shop_buffs WHERE id = ?")
-        .bind(item_id)
+        .bind(invslot_id)
         .fetch_one(&pool.mysql_pool)
         .await?;
     let usages = row.try_get::<i32, _>(0)?;

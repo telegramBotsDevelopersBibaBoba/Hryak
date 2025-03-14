@@ -2,16 +2,33 @@ use crate::{controllers::inventory::InventorySlot, StoragePool};
 
 pub async fn invslot(
     pool: &StoragePool,
-    buff_id: u64,
-    user_id: u64,
+    invslot_id: u64
 ) -> anyhow::Result<InventorySlot> {
-    let row = sqlx::query("SELECT * FROM inventory_slot_view WHERE user_id = ? AND item_id = ?")
-        .bind(user_id)
-        .bind(buff_id)
+    println!("invslot id {}", invslot_id);
+    let row = sqlx::query("SELECT * FROM inventory_slot_view WHERE id = ?")
+        .bind(invslot_id)
         .fetch_one(&pool.mysql_pool)
         .await?;
     Ok(InventorySlot::from_mysql_row(row)?)
 }
+
+pub async fn invslots(
+    pool: &StoragePool,
+    user_id: u64,
+) -> anyhow::Result<Vec<InventorySlot>> {
+    let rows = sqlx::query("SELECT * FROM inventory_slot_view WHERE user_id = ? LIMIT 5")
+        .bind(user_id)
+        .fetch_all(&pool.mysql_pool)
+        .await?;
+
+    let mut slots = Vec::new();
+    for row in rows {
+        slots.push(InventorySlot::from_mysql_row(row)?);
+    }
+
+    Ok(slots)
+}
+
 
 pub async fn item_exists(pool: &StoragePool, item_id: u64, user_id: u64) -> bool {
     match sqlx::query("SELECT * FROM inventory WHERE user_id = ? AND item_id = ?")
@@ -39,6 +56,21 @@ pub async fn increase_item_usages(
         .await?;
     Ok(())
 }
+
+pub async fn decrease_item_usages(
+    pool: &StoragePool,
+    invslot_id: u64,
+    rem_usages: i32,
+) -> anyhow::Result<()> {
+    sqlx::query("UPDATE inventory SET usages = usages - ? WHERE id = ?")
+        .bind(rem_usages)
+        .bind(invslot_id)
+        .execute(&pool.mysql_pool)
+        .await?;
+    Ok(())
+}
+
+
 
 pub async fn set_item_usages(
     pool: &StoragePool,
@@ -69,3 +101,17 @@ pub async fn add_item(
         .await?;
     Ok(())
 }
+
+pub async fn delete_item(
+    pool: &StoragePool,
+    invslot_id: u64,
+) -> anyhow::Result<()> {
+    sqlx::query("DELETE FROM inventory WHERE id = ?")
+        .bind(invslot_id)
+        .execute(&pool.mysql_pool)
+        .await?;
+    Ok(())
+}
+
+
+

@@ -14,6 +14,10 @@ pub struct Duel {
     pub part_id: i64,
     pub host_hp: f64,
     pub part_hp: f64,
+    pub host_attack: f64,
+    pub host_defense: f64,
+    pub part_attack: f64,
+    pub part_defense: f64,
     pub bid: f64,
 }
 
@@ -71,6 +75,11 @@ impl Duel {
         let part_id: i64 = row.try_get("part_id")?;
         let host_hp: f64 = row.try_get("host_hp")?;
         let part_hp: f64 = row.try_get("part_hp")?;
+        let host_attack: f64 = row.try_get("host_attack")?;
+        let host_defense: f64 = row.try_get("host_defense")?;
+        let part_attack: f64 = row.try_get("part_attack")?;
+        let part_defense: f64 = row.try_get("part_defense")?;
+
         let bid: f64 = row.try_get("bid")?;
         Ok(Self {
             host_id,
@@ -78,6 +87,10 @@ impl Duel {
             host_hp,
             part_hp,
             bid,
+            host_attack,
+            host_defense,
+            part_attack,
+            part_defense
         })
     }
 }
@@ -128,17 +141,11 @@ pub mod callback {
     use anyhow::anyhow;
     use rand::Rng;
     use teloxide::{
-        payloads::{AnswerCallbackQuerySetters, EditMessageTextInlineSetters},
-        prelude::{Request, Requester},
-        types::CallbackQuery,
-        Bot,
+        payloads::{AnswerCallbackQuerySetters, EditMessageReplyMarkupSetters, EditMessageTextInlineSetters}, prelude::{Request, Requester}, sugar::bot::BotMessagesExt, types::CallbackQuery, Bot
     };
 
     use crate::{
-        config::consts,
-        db::{dueldb, economydb, pigdb, userdb},
-        handlers::keyboard,
-        StoragePool,
+        config::consts, controllers::inventory, db::{dueldb, economydb, pigdb, userdb}, handlers::keyboard, StoragePool
     };
 
     use super::{
@@ -187,20 +194,26 @@ pub mod callback {
             bot.answer_callback_query(&q.id).await?;
             return Ok(())
         }
-
+        
         // Creeate a duel in table
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
         let part_pig = pigdb::pig_by_userid(pool, part_id).await?;
+        
         dueldb::create_duel(
             pool,
             host_id,
             part_id,
             host_pig.weight,
             part_pig.weight,
+            host_pig.attack,
+            host_pig.defense,
+            part_pig.attack,
+            part_pig.defense,
             bid,
         )
         .await?;
-
+        println!("up here");
+        
         // Setup message, add reply markup
 
         let msg = format!(
@@ -208,7 +221,7 @@ pub mod callback {
             host_pig.weight, part_pig.weight
         );
         bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-            .reply_markup(keyboard::make_duel_action(host_id, Duelist::Host))
+            .reply_markup(keyboard::make_duel_action(pool, host_id, part_id.clone(), Duelist::Host).await)
             .await?;
 
         Ok(())
@@ -230,12 +243,13 @@ pub mod callback {
         let duelist = Duelist::from_str(data[2])?;
 
         // Track health and etc
+        
         let mut duel: Duel = dueldb::duel(pool, host_id).await?;
-
+        
         // Get info about participants pigs
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
         let part_pig = pigdb::pig_by_userid(pool, q.from.id.0).await?;
-
+        
         match duelist {
             // Act based on who it is
             Duelist::Host => {
@@ -249,7 +263,7 @@ pub mod callback {
                 match action_type {
                     DuelActionType::Attack => {
                         duel.part_hp -=
-                            host_pig.attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
+                            duel.host_attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
 
                         if duel.part_hp <= 0.0 {
                             // Host won
@@ -271,7 +285,7 @@ pub mod callback {
                     }
                     DuelActionType::Defense => {
                         duel.host_hp +=
-                            host_pig.defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
+                            duel.host_defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
                         if duel.host_hp > host_pig.weight {
                             duel.host_hp = host_pig.weight;
                         }
@@ -282,10 +296,10 @@ pub mod callback {
                     (duel.host_hp * 100.0).floor() / 100.0,
                     (duel.part_hp * 100.0).floor() / 100.0
                 );
-                dueldb::update_duel(pool, duel).await?;
+                dueldb::update_duel(pool, &duel).await?;
 
                 bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-                    .reply_markup(keyboard::make_duel_action(host_id, Duelist::Part))
+                    .reply_markup(keyboard::make_duel_action(pool, host_id, duel.part_id as u64, Duelist::Part).await)
                     .await?;
             }
             Duelist::Part => {
@@ -299,7 +313,7 @@ pub mod callback {
                 match action_type {
                     DuelActionType::Attack => {
                         duel.host_hp -=
-                            part_pig.attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
+                            duel.part_attack * rand::rng().random_range(ATTACK_RANDOM_FACTOR);
 
                         if duel.host_hp <= 0.0 {
                             // Part won
@@ -320,7 +334,7 @@ pub mod callback {
                     }
                     DuelActionType::Defense => {
                         duel.part_hp +=
-                            part_pig.defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
+                            duel.part_defense * rand::rng().random_range(DEFENSE_RANDOM_FACTOR);
                         if duel.part_hp > part_pig.weight {
                             duel.part_hp = part_pig.weight;
                         }
@@ -331,14 +345,60 @@ pub mod callback {
                     (duel.host_hp * 100.0).floor() / 100.0,
                     (duel.part_hp * 100.0).floor() / 100.0
                 );
-                dueldb::update_duel(pool, duel).await?;
+                dueldb::update_duel(pool, &duel).await?;
 
                 bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-                    .reply_markup(keyboard::make_duel_action(host_id, Duelist::Host))
+                    .reply_markup(keyboard::make_duel_action(pool, host_id, duel.part_id as u64, Duelist::Host).await)
                     .await?;
+                
             }
         }
 
+        Ok(())
+    }
+
+    // &host_id.to_string(), &user_id.to_string(), &i.to_string())
+    pub async fn callback_use_buff(
+        bot: &Bot,
+        q: &CallbackQuery,
+        data: &[&str], // &host_id.to_string(), &user_id.to_string(), &invslot_id.to_string())
+        pool: &StoragePool,
+    ) -> anyhow::Result<()> {
+        let host_id = data[0].parse::<u64>()?;
+        let user_id = data[1].parse::<u64>()?;
+        let invslot_id = data[2].parse::<u64>()?;
+
+        if q.from.id.0 != user_id {
+            bot.answer_callback_query(&q.id).text("Не ваша очередь").send().await?;
+        }
+
+        let mut duel: Duel = dueldb::duel(pool, host_id).await?;
+        
+        match inventory::use_item(pool, invslot_id).await {
+            Ok((buff_type, power)) => {
+                if buff_type == "attack" {
+                    if q.from.id.0 == host_id {
+                        duel.host_attack += power;
+                    } else {
+                        duel.part_attack += power;
+                    }
+                } else {
+                    if q.from.id.0 == host_id {
+                        duel.host_defense += power;
+                    } else {
+                        duel.part_defense += power;
+                    }
+                }
+                dueldb::update_duel(pool, &duel).await?;
+
+                bot.answer_callback_query(&q.id).text("Успешно использовано").send().await?;
+            }
+            Err(why) => {
+                eprintln!("Err using item: {}", why);
+                bot.answer_callback_query(&q.id).text("Предмет закончился. Ошибка.").send().await?;
+            }
+        }
+        
         Ok(())
     }
 }

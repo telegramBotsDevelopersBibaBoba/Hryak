@@ -1,17 +1,18 @@
+use anyhow::anyhow;
 use sqlx::mysql::MySqlRow;
 use sqlx::{MySqlPool, Row};
 
-use crate::db::inventorydb;
+use crate::db::{dueldb, inventorydb};
 use crate::db::shopdb::get_usages_buff;
 use crate::StoragePool;
 
 pub struct InventorySlot {
-    id: i64,
-    item_id: i64,
-    title: String,
-    buff_type: String,
-    strength: f64,
-    usages: i32,
+    pub id: i64,
+    pub item_id: i64,
+    pub title: String,
+    pub buff_type: String,
+    pub strength: f64,
+    pub usages: i32,
 }
 
 impl InventorySlot {
@@ -43,4 +44,14 @@ pub async fn add_item(pool: &StoragePool, item_id: u64, user_id: u64) -> anyhow:
 
     inventorydb::add_item(pool, item_id, user_id, usages).await?;
     Ok(())
+}
+
+pub async fn use_item(pool: &StoragePool, invslot_id: u64) -> anyhow::Result<(String, f64)> {
+    let item = inventorydb::invslot(pool, invslot_id).await?;
+    if item.usages <= 1 {
+        inventorydb::delete_item(pool, invslot_id).await?;
+    }
+    inventorydb::decrease_item_usages(pool, invslot_id, 1).await?;
+
+    Ok((item.buff_type, item.strength))
 }

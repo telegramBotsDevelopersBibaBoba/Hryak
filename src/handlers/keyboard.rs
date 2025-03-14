@@ -1,6 +1,6 @@
 use crate::controllers::duel::DuelActionType;
 use crate::controllers::{duel::Duelist, shop::OfferType};
-use crate::db::shopdb;
+use crate::db::{inventorydb, shopdb};
 use sqlx::MySqlPool;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
@@ -53,26 +53,50 @@ pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String, bid: f64) -> In
     InlineKeyboardMarkup::new([buttons])
 }
 
-pub fn make_duel_action(host_id: u64, duelist: Duelist) -> InlineKeyboardMarkup {
-    let buttons = vec![
-        InlineKeyboardButton::callback(
-            "Атаковать",
-            ser_command!(
-                "action",
-                &host_id.to_string(),
-                &DuelActionType::Attack.to_string(),
-                &duelist.to_string()
+pub async fn make_duel_action(pool: &StoragePool, host_id: u64, part_id: u64, duelist: Duelist) -> InlineKeyboardMarkup {
+    println!("here");
+    
+    let mut rows = vec![
+        vec![
+            InlineKeyboardButton::callback(
+                "Атаковать",
+                ser_command!(
+                    "action",
+                    &host_id.to_string(),
+                    &DuelActionType::Attack.to_string(),
+                    &duelist.to_string()
+                ),
             ),
-        ),
-        InlineKeyboardButton::callback(
-            "Защищаться",
-            ser_command!(
-                "action",
-                &host_id.to_string(),
-                &DuelActionType::Defense.to_string(),
-                &duelist.to_string()
+            InlineKeyboardButton::callback(
+                "Защищаться",
+                ser_command!(
+                    "action",
+                    &host_id.to_string(),
+                    &DuelActionType::Defense.to_string(),
+                    &duelist.to_string()
+                ),
             ),
-        ),
+        ],
     ];
-    InlineKeyboardMarkup::new([buttons])
+
+    let user_id = match duelist {
+        Duelist::Host => host_id,
+        Duelist::Part => part_id,
+    };
+
+    let invslots = inventorydb::invslots(pool, user_id).await.unwrap();
+
+    for invslot in invslots {
+        println!("{}", invslot.id);
+        let button = InlineKeyboardButton::callback(
+            invslot.title,
+            ser_command!("buff", &host_id.to_string(), &user_id.to_string(), &invslot.id.to_string())
+        );
+        rows.push(vec![button]);
+    }
+
+    println!("here 2");
+    // Create the InlineKeyboardMarkup with the rows
+    InlineKeyboardMarkup::new(rows)
 }
+

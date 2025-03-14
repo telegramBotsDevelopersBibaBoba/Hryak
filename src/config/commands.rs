@@ -34,6 +34,8 @@ pub enum CallbackCommands {
     DuelStart,
     #[strum(serialize = "action")]
     DuelAction,
+    #[strum(serialize = "buff")]
+    BuffUse,
 }
 
 #[derive(Display, EnumString)]
