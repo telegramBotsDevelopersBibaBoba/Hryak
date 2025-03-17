@@ -1,8 +1,10 @@
-use teloxide::types::{InlineQueryResultArticle, InputMessageContent, InputMessageContentText};
+use teloxide::types::{
+    InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode,
+};
 
 use crate::controllers::{pig, shop};
 
-use crate::db::economydb;
+use crate::db::{economydb, inventorydb};
 use crate::handlers::keyboard;
 use crate::StoragePool;
 
@@ -31,7 +33,7 @@ pub fn inline_help_article() -> InlineQueryResultArticle {
     )
     .description("Узнай все доступные команды")
     .thumbnail_url(
-        "https://thumbs.dreamstime.com/z/lot-pigs-d-rendered-illustration-127843482.jpg"
+        "https://i.fbcd.co/products/original/8f367041dd093caa1b1fcdecfb5f958ffdd3ab33cab7a16c10dc3bc134ca4e96.jpg"
             .parse()
             .unwrap(),
     )
@@ -50,7 +52,7 @@ pub async fn inline_shop_article(pool: &StoragePool) -> anyhow::Result<InlineQue
     )
     .description("Шоп")
     .thumbnail_url(
-        "https://mr-7.ru/static/previews/2010/09/30/khriushi-boriutsia-so-svinstvom-magazinov.jpeg?v=1"
+        "https://static.wixstatic.com/media/3fe122_9085e9ea57114eb7b32ffc32f49c34bf~mv2.jpg/v1/fill/w_266,h_354,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/3fe122_9085e9ea57114eb7b32ffc32f49c34bf~mv2.jpg"
             .parse()
             .unwrap(),
     )
@@ -174,4 +176,45 @@ pub fn gamble_games_article() -> InlineQueryResultArticle {
     )
     .description("Посмотрите список доступных вам игр")
     .thumbnail_url("https://media.istockphoto.com/id/956025942/photo/newborn-piglet-on-spring-green-grass-on-a-farm.jpg?s=612x612&w=0&k=20&c=H01c3cbV4jozkEHvyathjQL1DtKx6mOd5s7NwACUJwA=".parse().unwrap())
+}
+
+pub async fn inventory_article(
+    pool: &StoragePool,
+    user_id: u64,
+) -> anyhow::Result<InlineQueryResultArticle> {
+    let invslots = inventorydb::invslots_all(pool, user_id).await?;
+
+    let mut message = String::new();
+    for invslot in invslots {
+        message += &format!("- {}\n", invslot.to_string());
+    }
+
+    Ok(InlineQueryResultArticle::new(
+        "inventory",
+        "Ваш инвентарь",
+        InputMessageContent::Text(InputMessageContentText::new(message)),
+    )
+    .description("Просмотрите содержимое вашего инвентаря")
+    .thumbnail_url(
+        "https://imgcdn.stablediffusionweb.com/2024/9/5/c1685066-c25b-46c1-9700-b5e2b81d9603.jpg"
+            .parse()
+            .unwrap(),
+    ))
+}
+pub fn duel_info_article() -> InlineQueryResultArticle {
+    let duel_msg = String::from(
+        "Дуэли — это одна из основных мини-игр, включённых в этого бота.\n\
+        Сама мини-игра проходит в пошаговом формате. Игроку предоставляются на выбор две возможности во время его шага:\n\
+        - **Атаковать**\n\
+        - **Защищаться**\n\
+        \n\
+        Перед любым из этих действий возможно использовать какой-то **буст** из инвентаря, который показан во время процесса дуэли.\n\
+        \n\
+        Чтобы начать дуэль, используйте `@hryak_zovbot duel [ставка-число]` или нажмите на одну из **кнопок**."
+    );
+
+    InlineQueryResultArticle::new("duel-info", "Дуэли", InputMessageContent::Text(InputMessageContentText::new(duel_msg).parse_mode(ParseMode::Markdown)))
+        .description("Узнать больше про дуэли: описание игры и как начать")
+        .thumbnail_url("https://static.wikia.nocookie.net/marvelcinematicuniverse/images/a/a0/War_Pig_Infobox.png/revision/latest?cb=20230905065042".parse().unwrap())
+        .reply_markup(keyboard::make_duel_options())
 }

@@ -38,6 +38,20 @@ pub async fn invslots(
     Ok(slots)
 }
 
+pub async fn invslots_all(pool: &StoragePool, user_id: u64) -> anyhow::Result<Vec<InventorySlot>> {
+    let rows = sqlx::query("SELECT * FROM inventory_slot_view WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_all(&pool.mysql_pool)
+        .await?;
+
+    let mut slots = Vec::new();
+    for row in rows {
+        slots.push(InventorySlot::from_mysql_row(row)?);
+    }
+
+    Ok(slots)
+}
+
 pub async fn item_exists(pool: &StoragePool, item_id: u64, user_id: u64) -> bool {
     match sqlx::query("SELECT * FROM inventory WHERE user_id = ? AND item_id = ?")
         .bind(user_id)

@@ -15,6 +15,8 @@ pub enum InlineCommands {
     Balance,
     #[strum(serialize = "азарт", serialize = "gamble")]
     Gamble,
+    #[strum(serialize = "inventory", serialize = "inv", serialize = "инвентарь")]
+    Inventory,
 }
 
 #[derive(Display, EnumString)]
@@ -36,8 +38,8 @@ pub enum CallbackCommands {
     DuelAction,
     #[strum(serialize = "buff")]
     BuffUse,
-    #[strum(serialize = "page")]
-    SwitchPage,
+    #[strum(serialize = "dpage")]
+    SwitchPageDuel,
 }
 
 #[derive(Display, EnumString)]

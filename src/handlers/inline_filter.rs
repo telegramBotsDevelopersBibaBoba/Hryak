@@ -56,6 +56,9 @@ pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: StoragePool)
                 InlineCommands::Gamble => {
                     controllers::gambling::inline::inline_gamble(bot, &q).boxed()
                 }
+                InlineCommands::Inventory => {
+                    controllers::inventory::inline::inventory(bot, &q, &pool).boxed()
+                }
             },
             Err(_) => inline_all_commands(bot, &q, &pool).boxed(),
         },
@@ -90,13 +93,8 @@ pub async fn filter_inline_commands(bot: Bot, q: InlineQuery, pool: StoragePool)
 
 async fn inline_all_commands(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> anyhow::Result<()> {
     let hryak = articles::inline_hryak_info_article(pool, q.from.id.0).await?;
-    let duel = articles::inline_duel_article(
-        pool,
-        q.from.id.0,
-        q.from.mention().unwrap(),
-        consts::DUEL_DEFAULT_BID,
-    )
-    .await?;
+
+    let duel = articles::duel_info_article();
     let help = articles::inline_help_article();
     let shop = articles::inline_shop_article(pool).await?;
     let balance = articles::inline_balance_article(pool, q.from.id.0).await?;

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use sqlx::mysql::MySqlRow;
 use sqlx::Row;
 
@@ -34,6 +36,12 @@ impl InventorySlot {
     }
 }
 
+impl Display for InventorySlot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Название: {}, Количество: {}x", self.title, self.usages)
+    }
+}
+
 pub async fn add_item(pool: &StoragePool, item_id: u64, user_id: u64) -> anyhow::Result<()> {
     let usages = get_usages_buff(pool, item_id).await?;
     if inventorydb::item_exists(pool, item_id, user_id).await {
@@ -53,4 +61,23 @@ pub async fn use_item(pool: &StoragePool, invslot_id: u64) -> anyhow::Result<(St
     inventorydb::decrease_item_usages(pool, invslot_id, 1).await?;
 
     Ok((item.buff_type, item.strength))
+}
+
+pub mod inline {
+    use teloxide::{
+        prelude::Requester,
+        types::{InlineQuery, InlineQueryResult},
+        Bot,
+    };
+
+    use crate::{handlers::articles, StoragePool};
+
+    pub async fn inventory(bot: Bot, q: &InlineQuery, pool: &StoragePool) -> anyhow::Result<()> {
+        let inv = articles::inventory_article(pool, q.from.id.0).await?;
+
+        let articles = vec![InlineQueryResult::Article(inv)];
+
+        bot.answer_inline_query(&q.id, articles).await?;
+        Ok(())
+    }
 }

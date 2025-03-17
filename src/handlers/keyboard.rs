@@ -5,15 +5,16 @@ use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use crate::{ser_command, StoragePool};
 pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
-    let button = InlineKeyboardButton::switch_inline_query_current_chat("Узнать про хряка", "хряк");
-    let button2 =
-        InlineKeyboardButton::switch_inline_query_current_chat("Открыть магазин", "магазин");
+    let button2 = InlineKeyboardButton::switch_inline_query_current_chat("Магазин", "магазин");
     let button3 =
         InlineKeyboardButton::switch_inline_query_current_chat("Сменить имя хряка", "имя");
-    let button4 =
-        InlineKeyboardButton::switch_inline_query_current_chat("Своя ставка в дуэли", "дуэль 999");
+    let button4 = InlineKeyboardButton::switch_inline_query_current_chat(
+        "Своя ставка в дуэли",
+        "дуэль число",
+    );
+    let button5 = InlineKeyboardButton::switch_inline_query_current_chat("Инвентарь", "inventory");
 
-    InlineKeyboardMarkup::new([[button], [button2], [button3], [button4]])
+    InlineKeyboardMarkup::new([[button2], [button3], [button4], [button5]])
 }
 
 pub async fn make_shop(
@@ -48,6 +49,13 @@ pub fn make_duel(duel_maker_id: u64, duel_maker_mention: String, bid: f64) -> In
     ];
 
     InlineKeyboardMarkup::new([buttons])
+}
+
+pub fn make_duel_options() -> InlineKeyboardMarkup {
+    let button1 = InlineKeyboardButton::switch_inline_query_current_chat("Ставка 5$", "duel 5");
+    let button2 = InlineKeyboardButton::switch_inline_query_current_chat("Ставка 10$", "duel 10");
+    let button3 = InlineKeyboardButton::switch_inline_query_current_chat("Ставка 50$", "duel 50");
+    InlineKeyboardMarkup::new([[button1], [button2], [button3]])
 }
 
 pub async fn make_duel_action(
@@ -118,7 +126,7 @@ pub async fn make_duel_action(
             InlineKeyboardButton::callback(
                 "<<",
                 ser_command!(
-                    "page",
+                    "dpage",
                     &host_id.to_string(),
                     &part_id.to_string(),
                     &duelist.to_string(),
@@ -128,7 +136,7 @@ pub async fn make_duel_action(
             InlineKeyboardButton::callback(
                 ">>",
                 ser_command!(
-                    "page",
+                    "dpage",
                     &host_id.to_string(),
                     &part_id.to_string(),
                     &duelist.to_string(),
