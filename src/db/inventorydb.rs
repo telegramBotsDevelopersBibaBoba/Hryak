@@ -92,21 +92,6 @@ pub async fn decrease_item_usages(
     Ok(())
 }
 
-pub async fn set_item_usages(
-    pool: &StoragePool,
-    item_id: i64,
-    user_id: i64,
-    usages: i32,
-) -> anyhow::Result<()> {
-    sqlx::query("UPDATE inventory SET usages = ? WHERE user_id = ? AND item_id = ?")
-        .bind(usages)
-        .bind(user_id)
-        .bind(item_id)
-        .execute(&pool.mysql_pool)
-        .await?;
-    Ok(())
-}
-
 pub async fn add_item(
     pool: &StoragePool,
     item_id: u64,

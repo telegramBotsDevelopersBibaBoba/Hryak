@@ -5,16 +5,13 @@ use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use crate::{ser_command, StoragePool};
 pub fn make_more_info_keyboard() -> InlineKeyboardMarkup {
-    let button2 = InlineKeyboardButton::switch_inline_query_current_chat("Магазин", "магазин");
-    let button3 =
+    let shop = InlineKeyboardButton::switch_inline_query_current_chat("Магазин", "магазин");
+    let change_name =
         InlineKeyboardButton::switch_inline_query_current_chat("Сменить имя хряка", "имя");
-    let button4 = InlineKeyboardButton::switch_inline_query_current_chat(
-        "Своя ставка в дуэли",
-        "дуэль число",
-    );
-    let button5 = InlineKeyboardButton::switch_inline_query_current_chat("Инвентарь", "inventory");
+    let inv = InlineKeyboardButton::switch_inline_query_current_chat("Инвентарь", "inventory");
+    let games = InlineKeyboardButton::switch_inline_query_current_chat("Азартные игры", "азарт");
 
-    InlineKeyboardMarkup::new([[button2], [button3], [button4], [button5]])
+    InlineKeyboardMarkup::new([[shop], [inv], [change_name], [games]])
 }
 
 pub async fn make_shop(

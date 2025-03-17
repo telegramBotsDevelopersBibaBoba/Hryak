@@ -9,7 +9,7 @@ use crate::{config::utils, db::economydb};
 
 use super::{should_cancel_dialog, HandlerResult};
 
-const RACE_BID_MULTIPLIER: f64 = 1.3;
+pub const RACE_BID_MULTIPLIER: f64 = 1.3;
 
 #[derive(Clone)]
 pub struct RacePig {
