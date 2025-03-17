@@ -65,6 +65,7 @@ pub async fn use_item(pool: &StoragePool, invslot_id: u64) -> anyhow::Result<(St
 
 pub mod inline {
     use teloxide::{
+        payloads::AnswerInlineQuerySetters,
         prelude::Requester,
         types::{InlineQuery, InlineQueryResult},
         Bot,
@@ -77,7 +78,9 @@ pub mod inline {
 
         let articles = vec![InlineQueryResult::Article(inv)];
 
-        bot.answer_inline_query(&q.id, articles).await?;
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
         Ok(())
     }
 }

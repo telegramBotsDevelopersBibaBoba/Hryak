@@ -172,15 +172,22 @@ pub async fn inventory_article(
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let invslots = inventorydb::invslots_all(pool, user_id).await?;
 
-    let mut message = String::new();
+    let mut message = String::from("📦 *Ваш инвентарь:*\n\n");
+
+    if invslots.is_empty() {
+        message.push_str("🔹 _Ваш инвентарь пуст._");
+    }
+
     for invslot in invslots {
-        message += &format!("- {}\n", invslot.to_string());
+        message += &format!("▫️ *{}* — `{}`x\n", invslot.title, invslot.usages);
     }
 
     Ok(InlineQueryResultArticle::new(
         "inventory",
         "Ваш инвентарь",
-        InputMessageContent::Text(InputMessageContentText::new(message)),
+        InputMessageContent::Text(
+            InputMessageContentText::new(message).parse_mode(ParseMode::Markdown),
+        ),
     )
     .description("Просмотрите содержимое вашего инвентаря")
     .thumbnail_url(
@@ -189,6 +196,7 @@ pub async fn inventory_article(
             .unwrap(),
     ))
 }
+
 pub fn duel_info_article() -> InlineQueryResultArticle {
     let duel_msg = String::from(
         "Дуэли — это одна из основных мини-игр, включённых в этого бота.\n\
