@@ -85,9 +85,9 @@ pub async fn inline_shop_article(pool: &StoragePool) -> anyhow::Result<InlineQue
 
 pub fn inline_name_article() -> InlineQueryResultArticle {
     make_article(
-        "name",
+        "name_ch",
         "Поменять имя у хряка",
-        "Чтобы сменить имя, нужно ввести 'имя новое_имя'",
+        "Введите 'имя <текст>'",
         "Введите пробел и имя",
         "https://www.lifewithpigs.com/uploads/7/7/7/1/77712458/published/luckpig.png?1518827974"
             .into(),
@@ -102,7 +102,7 @@ pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
     };
     make_article(
         "change_name",
-        "Меняем имя у хряка...",
+        &format!("Меняем имя у хряка на {}...", new_name),
         &format!("Имя хрюнделя было изменено на {} ✅", new_name),
         "Нажмите на кнопку, чтобы сменить имя",
         "https://media.licdn.com/dms/image/v2/C4E12AQHOTlp8TuFzxg/article-inline_image-shrink_1000_1488/article-inline_image-shrink_1000_1488/0/1520148182297?e=1743033600&v=beta&t=3zE1S7YVIL8QQ7JCyuSvy6Flj9Bm_27l6mRLJmU3Lzo".into(),

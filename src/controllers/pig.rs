@@ -53,18 +53,17 @@ pub mod inline {
         let changename = articles::inline_change_name_article(data);
 
         let articles = vec![InlineQueryResult::Article(changename)];
-        bot.answer_inline_query(&q.id, articles)
-            .cache_time(0)
-            .await?;
+        bot.answer_inline_query(&q.id, articles).await?;
         Ok(())
     }
 
     pub async fn inline_name(bot: Bot, q: &InlineQuery) -> anyhow::Result<()> {
         let name = articles::inline_name_article();
-
         let articles = vec![InlineQueryResult::Article(name)];
 
-        bot.answer_inline_query(&q.id, articles).await?;
+        bot.answer_inline_query(&q.id, articles)
+            .cache_time(0)
+            .await?;
         Ok(())
     }
 
