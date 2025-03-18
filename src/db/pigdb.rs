@@ -40,7 +40,6 @@ pub async fn exists(pool: &StoragePool, user_id: u64) -> bool {
 pub async fn weight(pool: &StoragePool, user_id: u64) -> anyhow::Result<f64> {
     let mut redis_con = pool.redis_pool.get()?;
     if let Ok(val) = redis_con.hget::<_, _, f64>(format!("pig:{}", user_id), "weight") {
-        println!("weight from cache");
         return Ok(val);
     }
 
@@ -67,7 +66,6 @@ pub async fn pig_by_userid(pool: &StoragePool, user_id: u64) -> anyhow::Result<P
                 name: pig_str[4].1.clone(),
                 id: 0,
             };
-            println!("pig struct from cache");
             return Ok(pig);
         }
     }

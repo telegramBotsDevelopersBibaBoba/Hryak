@@ -1,9 +1,11 @@
 use rand::Rng;
+use sqlx::types::chrono::Utc;
 
 use std::fmt::{self};
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, types::Message, Bot};
 
+use crate::db::gamblingdb;
 use crate::StoragePool;
 use crate::{config::utils, db::economydb};
 
@@ -42,8 +44,34 @@ pub enum PigRaceState {
 }
 pub type PigRaceDialogue = Dialogue<PigRaceState, InMemStorage<PigRaceState>>;
 
-pub async fn race_bid(bot: Bot, msg: Message, dialogue: PigRaceDialogue) -> HandlerResult {
-    utils::send_msg(&bot, &msg, "Введи свою ставку (Нужно ответить на сообщение):\nВведите отмена|cancel, чтобы прекратить выполнение команды досрочно").await?;
+pub async fn race_bid(
+    bot: Bot,
+    msg: Message,
+    dialogue: PigRaceDialogue,
+    pool: crate::StoragePool,
+) -> HandlerResult {
+    let last_time_played =
+        gamblingdb::pigrace_last_time(&pool, msg.from.as_ref().unwrap().id.0).await?;
+    if last_time_played.is_some() && (Utc::now() - last_time_played.unwrap()).num_hours() < 2 {
+        utils::send_msg(
+            &bot,
+            &msg,
+            &format!(
+                "Попробуйте сыграть снова через {} часов.",
+                2 - (Utc::now() - last_time_played.unwrap()).num_hours()
+            ),
+        )
+        .await?;
+
+        return Ok(());
+    }
+
+    utils::send_msg(
+        &bot,
+        &msg,
+        "Введи свою ставку:\n(Нужно ответить на сообщение)",
+    )
+    .await?;
     dialogue.update(PigRaceState::ReceiveBid).await?;
     Ok(())
 }
@@ -81,28 +109,28 @@ pub async fn race_receive_bid(
             let pig_first = RacePig {
                 name: "Vicinity".to_string(),
                 speed: rand::rng().random_range(1.0..=10.0),
-                stamina: rand::rng().random_range(1.0..=5.0),
+                stamina: rand::rng().random_range(1.0..=7.0),
             };
 
             let pig_second = RacePig {
                 name: "Afrodita".to_string(),
                 speed: rand::rng().random_range(1.0..=10.0),
-                stamina: rand::rng().random_range(1.0..=5.0),
+                stamina: rand::rng().random_range(1.0..=7.0),
             };
             let pig_third = RacePig {
                 name: "Anal".to_string(),
                 speed: rand::rng().random_range(1.0..=10.0),
-                stamina: rand::rng().random_range(1.0..=5.0),
+                stamina: rand::rng().random_range(1.0..=7.0),
             };
             let pig_fourth = RacePig {
                 name: "Niggler".to_string(),
                 speed: rand::rng().random_range(1.0..=10.0),
-                stamina: rand::rng().random_range(1.0..=5.0),
+                stamina: rand::rng().random_range(1.0..=7.0),
             };
             let pig_fifth = RacePig {
                 name: "Lucifer".to_string(),
                 speed: rand::rng().random_range(1.0..=10.0),
-                stamina: rand::rng().random_range(1.0..=5.0),
+                stamina: rand::rng().random_range(1.0..=7.0),
             };
 
             let pigs = vec![pig_first, pig_second, pig_third, pig_fourth, pig_fifth];
@@ -113,7 +141,7 @@ pub async fn race_receive_bid(
             msg_str += "Выбери свинью по номеру:";
             utils::send_msg(&bot, &msg, &msg_str).await?;
             dialogue
-                .update(PigRaceState::ReceiveChosenPig { pigs: pigs, bid })
+                .update(PigRaceState::ReceiveChosenPig { pigs, bid })
                 .await?;
         }
         None => {
@@ -164,7 +192,7 @@ pub async fn race_receive_number(
 
                 for (i, pig) in pigs.iter().enumerate() {
                     // Базовый прогресс = скорость * случайный множитель (0.8–1.2)
-                    let random_factor = rand::rng().random_range(0.5..=1.2);
+                    let random_factor = rand::rng().random_range(0.4..=1.1);
                     let mut stage_progress = pig.speed * random_factor;
 
                     // Штраф за усталость: чем ниже выносливость, тем больше снижение
@@ -213,6 +241,8 @@ pub async fn race_receive_number(
                 )
             };
             dialogue.exit().await?;
+
+            gamblingdb::pigrace_played(&pool, msg.from.as_ref().unwrap().id.0 as u32).await?;
             utils::send_msg(&bot, &msg, &result_msg).await?;
         }
         None => {

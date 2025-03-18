@@ -72,7 +72,6 @@ pub async fn balance(pool: &StoragePool, user_id: u64) -> anyhow::Result<f64> {
     if let Ok(val) =
         redis_con.hget::<_, String, f64>(format!("bank:{}", user_id), "balance".to_string())
     {
-        println!("bal from cache");
         return Ok(val);
     }
     let row = sqlx::query("SELECT balance FROM bank WHERE user_id = ?")
@@ -90,7 +89,6 @@ pub async fn daily_income(pool: &StoragePool, user_id: u64) -> anyhow::Result<f6
     if let Ok(val) =
         redis_con.hget::<_, _, f64>(format!("bank:{}", user_id), "daily_income".to_string())
     {
-        println!("daily income from cache");
         return Ok(val);
     }
 

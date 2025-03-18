@@ -21,7 +21,12 @@ pub enum GuessState {
 pub type GuessDialogue = Dialogue<GuessState, InMemStorage<GuessState>>;
 
 pub async fn guess_bid(bot: Bot, msg: Message, dialogue: GuessDialogue) -> HandlerResult {
-    utils::send_msg(&bot, &msg, "Введи свою ставку (Нужно ответить на сообщение):\nВведите отмена|cancel на любое из сообщений, чтобы прекратить выполнение команды досрочно").await?;
+    utils::send_msg(
+        &bot,
+        &msg,
+        "Введи свою ставку:\n(Нужно ответить на сообщение)",
+    )
+    .await?;
     dialogue.update(GuessState::ReceiveBid).await?;
 
     Ok(())
@@ -44,7 +49,7 @@ pub async fn guess_number(
                 Ok(bid) => bid,
                 Err(why) => {
                     eprintln!("{}", why);
-                    utils::send_msg(&bot, &msg, "Отправь число (например, 10.0)!").await?;
+                    utils::send_msg(&bot, &msg, "Отправь число (например, 10)!").await?;
                     return Ok(());
                 }
             };

@@ -1,11 +1,12 @@
 use std::fmt::Display;
 
 use rand::Rng;
+use sqlx::types::chrono::Utc;
 use teloxide::prelude::Dialogue;
 use teloxide::{dispatching::dialogue::InMemStorage, prelude::*};
 
 use crate::config::utils;
-use crate::db::economydb;
+use crate::db::{economydb, gamblingdb};
 use crate::StoragePool;
 
 use super::{should_cancel_dialog, HandlerResult};
@@ -72,8 +73,34 @@ pub enum TreasureState {
 }
 pub type TreasureDialogue = Dialogue<TreasureState, InMemStorage<TreasureState>>;
 
-pub async fn treasure_bid(bot: Bot, msg: Message, dialogue: TreasureDialogue) -> HandlerResult {
-    utils::send_msg(&bot, &msg, "Введи свою ставку (Нужно ответить на сообщение):\nВведите отмена|cancel на любое из сообщений, чтобы прекратить выполнение команды досрочно").await?;
+pub async fn treasure_bid(
+    bot: Bot,
+    msg: Message,
+    dialogue: TreasureDialogue,
+    pool: StoragePool,
+) -> HandlerResult {
+    let last_time_played =
+        gamblingdb::treasurehunt_last_time(&pool, msg.from.as_ref().unwrap().id.0).await?;
+    if last_time_played.is_some() && (Utc::now() - last_time_played.unwrap()).num_hours() < 2 {
+        utils::send_msg(
+            &bot,
+            &msg,
+            &format!(
+                "Попробуйте сыграть снова через {} часов.",
+                2 - (Utc::now() - last_time_played.unwrap()).num_hours()
+            ),
+        )
+        .await?;
+
+        return Ok(());
+    }
+
+    utils::send_msg(
+        &bot,
+        &msg,
+        "Введи свою ставку:\n(Нужно ответить на сообщение)",
+    )
+    .await?;
     dialogue.update(TreasureState::ReceiveBid).await?;
 
     Ok(())
@@ -96,7 +123,7 @@ pub async fn treasure_receive_bid(
                 Ok(bid) => bid,
                 Err(why) => {
                     eprintln!("{}", why);
-                    utils::send_msg(&bot, &msg, "Отправь число (например, 10.0)!").await?;
+                    utils::send_msg(&bot, &msg, "Отправь число (например, 10)!").await?;
                     return Ok(());
                 }
             };
@@ -140,7 +167,7 @@ pub async fn treasure_receive_bid(
                 })
                 .await?;
         }
-        None => utils::send_msg(&bot, &msg, "Отправь число (например, 10.0)!").await?,
+        None => utils::send_msg(&bot, &msg, "Отправь число (например, 10)!").await?,
     }
     Ok(())
 }
@@ -185,7 +212,7 @@ pub async fn location_chosen(
                         &bot,
                         &msg,
                         &format!(
-                            "Хряк нашёл {} монет в {}!",
+                            "Хряк нашёл {} монет в {}! 💹",
                             (amount * 100.0).floor() / 100.0,
                             chosen_location
                         ),
@@ -196,15 +223,23 @@ pub async fn location_chosen(
                     utils::send_msg(
                         &bot,
                         &msg,
-                        &format!("Хряк вернулся из {} с пустыми копытами.", chosen_location),
+                        &format!("Хряк вернулся из {} с пустыми копытами 📉", chosen_location),
                     )
                     .await?;
                 }
             }
 
+            gamblingdb::treasurehunt_played(&pool, msg.from.as_ref().unwrap().id.0 as u32).await?;
             dialogue.exit().await?;
         }
-        None => utils::send_msg(&bot, &msg, "Отправь число от 1 до 3").await?,
+        None => {
+            utils::send_msg(
+                &bot,
+                &msg,
+                &format!("Отправь число от 1 до {}", locations.len()),
+            )
+            .await?
+        }
     }
     Ok(())
 }
@@ -220,7 +255,7 @@ fn simulate_treasure_hunt(location: &TreasureLocation, bid: f64) -> TreasureResu
     match location.difficulty {
         TreasureDifficulty::Easy => {
             if rng.random_bool(0.6) {
-                let amount = rng.random_range(5.0..=20.0);
+                let amount = rng.random_range(20.0..=40.0);
                 TreasureResult::Coins(bid * (amount / 100.0))
             } else {
                 TreasureResult::Nothing
@@ -228,7 +263,7 @@ fn simulate_treasure_hunt(location: &TreasureLocation, bid: f64) -> TreasureResu
         }
         TreasureDifficulty::Medium => {
             if rng.random_bool(0.4) {
-                let amount = rng.random_range(30.0..=60.0);
+                let amount = rng.random_range(40.0..=80.0);
                 TreasureResult::Coins(bid * (amount / 100.0))
             } else {
                 TreasureResult::Nothing
@@ -236,7 +271,7 @@ fn simulate_treasure_hunt(location: &TreasureLocation, bid: f64) -> TreasureResu
         }
         TreasureDifficulty::Hard => {
             if rng.random_bool(0.2) {
-                let amount = rng.random_range(60.0..=150.0);
+                let amount = rng.random_range(80.0..=150.0);
                 TreasureResult::Coins(bid * (amount / 100.0))
             } else {
                 TreasureResult::Nothing

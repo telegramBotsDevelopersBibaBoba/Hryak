@@ -32,7 +32,6 @@ pub async fn username(pool: &StoragePool, user_id: u64) -> anyhow::Result<String
     let mut redis_con = pool.redis_pool.get()?;
 
     if let Ok(val) = redis_con.get::<_, String>(format!("user:{}", user_id)) {
-        println!("username from cache");
         return Ok(val);
     }
     // If it isnt in cache

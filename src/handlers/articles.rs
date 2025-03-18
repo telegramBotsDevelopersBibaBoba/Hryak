@@ -16,48 +16,71 @@ pub async fn inline_hryak_info_article(
 ) -> anyhow::Result<InlineQueryResultArticle> {
     let pig = pig::get_pig(pool, user_id).await?;
 
-    let hrundel_weight = make_article("hryak", "Узнать инфу о хряке",
-        &format!("Имя хряка: {}\nРазмер хряка: {} кг\nАттака: {}, Защита: {}", pig.name, pig.weight, pig.attack, pig.defense),
-        "Посмотрите подробную информацию о вашей свинке",
-        "https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".into());
+    let hrundel_weight = make_article(
+        "hryak",
+        "🐷 Информация о хряке",
+        &format!(
+            "📌 *Имя хряка:* `{}`\n⚖️ *Вес:* `{}` кг\n⚔️ *Атака:* `{}`\n🛡 *Защита:* `{}`",
+            pig.name, pig.weight, pig.attack, pig.defense
+        ),
+        "🔍 Подробная информация о вашем хряке",
+        "https://sputnik.kz/img/858/06/8580645_0:0:3117:2048_600x0_80_0_1_81d5b1f42e05e39353aa388a4e55cb34.jpg".into(),
+    );
 
     Ok(hrundel_weight)
 }
+
 pub fn inline_help_article() -> InlineQueryResultArticle {
+    let help_text = "🐷 *Хрякобот — виртуальный мир хряков!*\n\
+        \n\
+        В этом боте вы можете выращивать своего хряка, улучшать его характеристики, \
+        сражаться в дуэлях с другими игроками и зарабатывать деньги.\n\
+        \n\
+        🎮 Помимо основного игрового процесса, доступны мини-игры и азартные развлечения:\n\
+        \n\
+        💰 /daily — забрать ежедневный доход\n\
+        🏁 /race — мини-игра \"Гонки свиней\"\n\
+        🏆 /treasurehunt — мини-игра \"Охота за сокровищами\"\n\
+        🎲 /guess — мини-игра \"Угадай число\"\n\
+        \n\
+        ⚠️ *Важно!* В азартных играх перед началом вам будет предложено ввести ставку и выполнить \
+        требуемое действие (Отвечать нужно на сообщения бота). Чтобы отменить диалог в любой момент, введите *отмена*.\n\
+        \n\
+        ";
+
     InlineQueryResultArticle::new(
         "help".to_string(),
-        "Помощь".to_string(),
-        InputMessageContent::Text(InputMessageContentText::new(
-            "Вот список доступных комманд:",
-        )),
+        "🐷 Хрякобот — помощь".to_string(),
+        InputMessageContent::Text(
+            InputMessageContentText::new(help_text)
+                .parse_mode(ParseMode::Markdown),
+        ),
     )
-    .description("Узнай все доступные команды")
+    .description("Выращивайте хряка, улучшайте его и побеждайте в дуэлях!")
     .thumbnail_url(
         "https://i.fbcd.co/products/original/8f367041dd093caa1b1fcdecfb5f958ffdd3ab33cab7a16c10dc3bc134ca4e96.jpg"
             .parse()
             .unwrap(),
     )
-    .reply_markup(keyboard::make_more_info_keyboard()) // Showing a 'keyboard' with all the additional inline queries
+    .reply_markup(keyboard::make_more_info_keyboard())
 }
 
 pub async fn inline_shop_article(pool: &StoragePool) -> anyhow::Result<InlineQueryResultArticle> {
     let offers = shop::get_daily_offers();
-
     let (kb, text) = keyboard::make_shop(&offers, pool).await?;
 
-    let shop = InlineQueryResultArticle::new(
+    Ok(InlineQueryResultArticle::new(
         "shop".to_string(),
-        "Закупки".to_string(),
+        "🛒 Магазин предложений".to_string(),
         InputMessageContent::Text(InputMessageContentText::new(text)),
     )
-    .description("Шоп")
+    .description("Лучшие товары дня! 🎉")
     .thumbnail_url(
         "https://static.wixstatic.com/media/3fe122_9085e9ea57114eb7b32ffc32f49c34bf~mv2.jpg/v1/fill/w_266,h_354,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/3fe122_9085e9ea57114eb7b32ffc32f49c34bf~mv2.jpg"
             .parse()
             .unwrap(),
     )
-    .reply_markup(kb); // Showing a 'keyboard' with all the additional inline queries
-    Ok(shop)
+    .reply_markup(kb))
 }
 
 pub fn inline_name_article() -> InlineQueryResultArticle {
@@ -80,7 +103,7 @@ pub fn inline_change_name_article(new_name: &str) -> InlineQueryResultArticle {
     make_article(
         "change_name",
         "Меняем имя у хряка...",
-        &format!("Имя хрюнделя было изменено на {}", new_name),
+        &format!("Имя хрюнделя было изменено на {} ✅", new_name),
         "Нажмите на кнопку, чтобы сменить имя",
         "https://media.licdn.com/dms/image/v2/C4E12AQHOTlp8TuFzxg/article-inline_image-shrink_1000_1488/article-inline_image-shrink_1000_1488/0/1520148182297?e=1743033600&v=beta&t=3zE1S7YVIL8QQ7JCyuSvy6Flj9Bm_27l6mRLJmU3Lzo".into(),
     )
@@ -130,16 +153,18 @@ pub async fn inline_balance_article(
     let daily_income = economydb::daily_income(pool, user_id).await?;
 
     let message = format!(
-        "Ваш баланс: {}$\nВаш ежедневный доход: {}$",
+        "💰 *Ваш баланс:* `{}`$\n📈 *Ежедневный доход:* `{}`$",
         balance, daily_income
     );
 
     let balance_article = InlineQueryResultArticle::new(
         "balance",
-        "Ваш баланс",
-        InputMessageContent::Text(InputMessageContentText::new(message)),
+        "💳 Ваш баланс",
+        InputMessageContent::Text(
+            InputMessageContentText::new(message).parse_mode(ParseMode::MarkdownV2),
+        ),
     )
-    .description("Нажмите сюда, чтобы увидеть ваш баланс")
+    .description("📊 Узнайте свой текущий баланс")
     .thumbnail_url(
         "https://ih1.redbubble.net/image.5250551209.9937/flat,750x,075,f-pad,750x1000,f8f8f8.webp"
             .parse()
@@ -148,7 +173,6 @@ pub async fn inline_balance_article(
 
     Ok(balance_article)
 }
-
 #[inline]
 pub fn make_article(
     id: &str,
@@ -160,7 +184,7 @@ pub fn make_article(
     InlineQueryResultArticle::new(
         id,
         title,
-        InputMessageContent::Text(InputMessageContentText::new(content)),
+        InputMessageContent::Text(InputMessageContentText::new(content).parse_mode(ParseMode::Markdown)),
     )
     .description(description)
     .thumbnail_url(url.unwrap_or("https://media.istockphoto.com/id/956025942/photo/newborn-piglet-on-spring-green-grass-on-a-farm.jpg?s=612x612&w=0&k=20&c=H01c3cbV4jozkEHvyathjQL1DtKx6mOd5s7NwACUJwA=").parse().unwrap())
@@ -182,35 +206,37 @@ pub async fn inventory_article(
         message += &format!("▫️ *{}* — `{}`x\n", invslot.title, invslot.usages);
     }
 
-    Ok(InlineQueryResultArticle::new(
+    Ok(make_article(
         "inventory",
-        "Ваш инвентарь",
-        InputMessageContent::Text(
-            InputMessageContentText::new(message).parse_mode(ParseMode::Markdown),
-        ),
-    )
-    .description("Просмотрите содержимое вашего инвентаря")
-    .thumbnail_url(
+        "🎒 Ваш инвентарь",
+        &message,
+        "🔍 Посмотрите, что у вас есть",
         "https://imgcdn.stablediffusionweb.com/2024/9/5/c1685066-c25b-46c1-9700-b5e2b81d9603.jpg"
-            .parse()
-            .unwrap(),
+            .into(),
     ))
 }
 
 pub fn duel_info_article() -> InlineQueryResultArticle {
     let duel_msg = String::from(
-        "Дуэли — это одна из основных мини-игр, включённых в этого бота.\n\
-        Сама мини-игра проходит в пошаговом формате. Игроку предоставляются на выбор две возможности во время его шага:\n\
-        - **Атаковать**\n\
-        - **Защищаться**\n\
+        "⚔️ *Дуэли* — это пошаговая мини-игра, в которой вы можете испытать свою удачу и стратегию!\n\
         \n\
-        Перед любым из этих действий возможно использовать какой-то **буст** из инвентаря, который показан во время процесса дуэли.\n\
+        🎯 Во время дуэли у вас есть два действия на выбор:\n\
+        - 🗡 **Атаковать**\n\
+        - 🛡 **Защищаться**\n\
         \n\
-        Чтобы начать дуэль, используйте `@hryak_zovbot duel [ставка-число]` или нажмите на одну из **кнопок**."
+        🏆 Также вы можете использовать *бусты* из инвентаря, чтобы увеличить свои шансы на победу!\n\
+        \n\
+        🔥 Чтобы начать дуэль, используйте:\n\
+        `@hryak_zovbot duel [ставка-число]`\n\
+        или нажмите на кнопку ниже!"
     );
 
-    InlineQueryResultArticle::new("duel-info", "Дуэли", InputMessageContent::Text(InputMessageContentText::new(duel_msg).parse_mode(ParseMode::Markdown)))
-        .description("Узнать больше про дуэли: описание игры и как начать")
-        .thumbnail_url("https://static.wikia.nocookie.net/marvelcinematicuniverse/images/a/a0/War_Pig_Infobox.png/revision/latest?cb=20230905065042".parse().unwrap())
-        .reply_markup(keyboard::make_duel_options())
+    make_article(
+        "duel-info",
+        "🛡️ Информация о дуэлях",
+        &duel_msg,
+        "📜 Узнайте правила и начните сражение!",
+        "https://static.wikia.nocookie.net/marvelcinematicuniverse/images/a/a0/War_Pig_Infobox.png/revision/latest?cb=20230905065042".into(),
+    )
+    .reply_markup(keyboard::make_duel_options())
 }

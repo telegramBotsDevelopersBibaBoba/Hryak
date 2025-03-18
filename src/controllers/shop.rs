@@ -47,12 +47,11 @@ impl Display for FoodOffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}$ - {} ({}Ккал): {}",
+            "🍏 {}$ - {} ({}Ккал): {}",
             self.price, self.title, self.nutrition, self.description
         )
     }
 }
-
 #[derive(Clone)]
 pub struct ImprovementOffer {
     id: i64,
@@ -89,12 +88,11 @@ impl Display for ImprovementOffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}$ - {} ({}): {}",
+            "🛠️ {}$ - {} ({}): {}",
             self.price, self.title, self.improvement_type, self.description
         )
     }
 }
-
 #[derive(Clone)]
 pub struct BuffOffer {
     id: i64,
@@ -132,7 +130,7 @@ impl Display for BuffOffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}$ - {} ({}): {}",
+            "✨ {}$ - {} ({}): {}",
             self.price, self.title, self.buff_type, self.description
         )
     }
@@ -274,9 +272,7 @@ pub async fn generate_new_offers() {
             TODAYS_OFFERS.push((buff_offer_second, OfferType::Buff));
         }
 
-        println!("Sleeping");
         thread::sleep(Duration::from_secs(86400));
-        println!("Stopped sleeping");
     }
 }
 

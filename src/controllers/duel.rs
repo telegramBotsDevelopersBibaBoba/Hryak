@@ -223,15 +223,17 @@ pub mod callback {
         )
         .await?;
 
-        let msg = format!(
-            "Очередь: хоста\nЗдоровье хоста: {} хп\nЗдоровье участника: {} hp",
-            host_pig.weight, part_pig.weight
-        );
-        bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
-            .reply_markup(
-                keyboard::make_duel_action(pool, host_id, part_id.clone(), Duelist::Host, 0).await,
-            )
-            .await?;
+        bot.edit_message_text_inline(
+            q.inline_message_id.as_ref().unwrap(),
+            format!(
+                "🎭 Очередь: Хост\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
+                host_pig.weight, part_pig.weight
+            ),
+        )
+        .reply_markup(
+            keyboard::make_duel_action(pool, host_id, part_id.clone(), Duelist::Host, 0).await,
+        )
+        .await?;
 
         Ok(())
     }
@@ -305,7 +307,7 @@ pub mod callback {
         }
 
         let msg = format!(
-            "Очередь участника\nЗдоровье хоста: {:.2} хп\nЗдоровье участника: {:.2} хп",
+            "🔄 Очередь участника\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
             duel.host_hp, duel.part_hp
         );
         dueldb::update_duel(pool, duel).await?;
@@ -352,7 +354,7 @@ pub mod callback {
         }
 
         let msg = format!(
-            "Очередь хоста\nЗдоровье хоста: {:.2} хп\nЗдоровье участника: {:.2} хп",
+            "🔄 Очередь хоста\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
             duel.host_hp, duel.part_hp
         );
         dueldb::update_duel(pool, duel).await?;
@@ -375,7 +377,12 @@ pub mod callback {
         host_id: u64,
     ) -> anyhow::Result<()> {
         let username = userdb::username(pool, winner_id).await?;
-        let msg = format!("@{} выиграл {}$", username, 2.0 * bid);
+        let msg = format!(
+            "🎉 Победитель: @{} 🏆\n💰 Выигрыш: {}$",
+            username,
+            2.0 * bid
+        );
+
         bot.edit_message_text_inline(q.inline_message_id.as_ref().unwrap(), msg)
             .await?;
         proccess_duel_results(pool, winner_id, loser_id, bid).await?;

@@ -67,12 +67,7 @@ pub async fn economy_handle(
         }
         EconomyCommands::Pay { mention, amount } => {
             let mention: String = mention.chars().skip(1).collect();
-            println!("Args: {} {}", mention, amount);
-            let balance_host = economydb::balance(&pool, msg.from.as_ref().unwrap().id.0).await?;
-            if balance_host < amount {
-                todo!("Send error message not enogu money");
-            }
-            println!("here");
+
             let receiver_id = match userdb::id(&pool, &mention).await {
                 Ok(id) => id as u64,
                 Err(_) => {
@@ -81,10 +76,14 @@ pub async fn economy_handle(
                 }
             };
 
-            economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount).await?;
+            if let Err(_) =
+                economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount).await
+            {
+                utils::send_msg(&bot, &msg, "Недостаточно денег для перевода! 😔").await?
+            }
             economydb::add_money(&pool, receiver_id, amount).await?;
 
-            utils::send_msg(&bot, &msg, &format!("Вы успешно перевели {}$", amount)).await?;
+            utils::send_msg(&bot, &msg, &format!("Вы успешно перевели {}$ ✅", amount)).await?;
             return Ok(());
         }
     }

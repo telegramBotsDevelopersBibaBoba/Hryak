@@ -13,7 +13,6 @@ pub async fn food_offer(pool: &StoragePool, offer_id: u64) -> anyhow::Result<Foo
             .map_err(|e| anyhow::anyhow!("RwLock read error: {}", e))?;
 
         if let Some(offer) = cache.get(&offer_id) {
-            println!("food offer from cache");
             return Ok(offer.clone());
         }
     } // Drop read lock before acquiring write lock
@@ -44,7 +43,6 @@ pub async fn improvement_offer(
             .read()
             .map_err(|e| anyhow::anyhow!("RwLock read error: {}", e))?;
         if let Some(offer) = cache.get(&improvement_id) {
-            println!("improv offer from cache");
             return Ok(offer.clone());
         }
     }
@@ -72,7 +70,6 @@ pub async fn buff_offer(pool: &StoragePool, buff_id: u64) -> anyhow::Result<Buff
             .map_err(|e| anyhow::anyhow!("RwLock read error: {}", e))?;
 
         if let Some(offer) = cache.get(&buff_id) {
-            println!("buff offer from cache");
             return Ok(offer.clone());
         }
     } // Drop read lock before acquiring write lock
