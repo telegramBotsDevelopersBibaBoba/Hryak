@@ -19,9 +19,7 @@ pub fn should_cancel_dialog(text: &str) -> bool {
 }
 
 pub mod inline {
-    use teloxide::{
-        payloads::AnswerInlineQuerySetters, prelude::Requester, types::InlineQuery, Bot,
-    };
+    use teloxide::{prelude::Requester, types::InlineQuery, Bot};
 
     use crate::handlers::articles;
 

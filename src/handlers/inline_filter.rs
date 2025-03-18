@@ -8,7 +8,6 @@ use crate::handlers::articles;
 use crate::StoragePool;
 use futures::FutureExt;
 use teloxide::payloads::AnswerInlineQuerySetters;
-use teloxide::prelude::Request;
 use teloxide::{
     prelude::Requester,
     types::{InlineQuery, InlineQueryResult},
