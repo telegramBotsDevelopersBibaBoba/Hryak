@@ -103,7 +103,6 @@ pub async fn proccess_duel_results(
     bid: f64,
 ) -> anyhow::Result<()> {
     economydb::add_money(pool, winner_id, 2.0 * bid).await?;
-    economydb::sub_money(pool, loser_id, bid).await?;
     Ok(())
 }
 
