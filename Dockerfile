@@ -4,6 +4,6 @@ WORKDIR /root
 
 COPY . .
 
-RUN cargo run --release
+RUN cargo build --release
 
-CMD ['/root/target/release/Hryak']
+CMD ["/root/target/release/Hryak"]
