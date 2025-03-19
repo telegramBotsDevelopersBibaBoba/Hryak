@@ -200,7 +200,7 @@ pub mod callback {
         economydb::sub_money(pool, host_id, bid).await?;
         if let Err(why) = economydb::sub_money(pool, part_id, bid).await {
             eprintln!("Error sub money from part: {}", why);
-            bot.answer_callback_query(&q.id).await?;
+            bot.answer_callback_query(&q.id).text("Недостаточно денег").await?;
             return Ok(());
         }
 
