@@ -79,7 +79,8 @@ pub async fn economy_handle(
             if let Err(_) =
                 economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount).await
             {
-                utils::send_msg(&bot, &msg, "Недостаточно денег для перевода! 😔").await?
+                utils::send_msg(&bot, &msg, "Недостаточно денег для перевода! 😔").await?;
+                return Ok(())
             }
             economydb::add_money(&pool, receiver_id, amount).await?;
 

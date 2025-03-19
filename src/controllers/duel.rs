@@ -305,10 +305,10 @@ pub mod callback {
                 }
             }
         }
-
+        let username = userdb::username(pool, duel.part_id as u64).await?;
         let msg = format!(
-            "🔄 Очередь участника\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
-            duel.host_hp, duel.part_hp
+            "🔄 Очередь участника @{}\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
+            username, duel.host_hp, duel.part_hp
         );
         dueldb::update_duel(pool, duel).await?;
         let keyboard =
@@ -352,10 +352,10 @@ pub mod callback {
                 }
             }
         }
-
+        let username = userdb::username(pool, duel.host_id as u64).await?;
         let msg = format!(
-            "🔄 Очередь хоста\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
-            duel.host_hp, duel.part_hp
+            "🔄 Очередь хоста @{}\n❤️ ХП Хоста: {:.2}\n❤️ ХП Участника: {:.2}",
+            username, duel.host_hp, duel.part_hp
         );
         dueldb::update_duel(pool, duel).await?;
         let keyboard =
