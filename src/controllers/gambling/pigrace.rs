@@ -234,7 +234,6 @@ pub async fn race_receive_number(
                     winnings.floor()
                 )
             } else {
-                economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, bid).await?;
                 format!(
                     "Победила свинья {}! Ты проиграл ставку {}$.",
                     winner.name, bid
