@@ -8,7 +8,7 @@ use crate::StoragePool;
 
 use super::{should_cancel_dialog, HandlerResult};
 
-pub const GUESS_BID_MULTIPLIER: f64 = 1.8;
+pub const GUESS_BID_MULTIPLIER: f64 = 30.0;
 #[derive(Clone, Default)]
 pub enum GuessState {
     #[default]
