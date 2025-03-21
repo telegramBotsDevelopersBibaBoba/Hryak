@@ -211,11 +211,7 @@ pub async fn location_chosen(
                     utils::send_msg(
                         &bot,
                         &msg,
-                        &format!(
-                            "Хряк нашёл {} монет в {}! 💹",
-                            (amount * 100.0).floor() / 100.0,
-                            chosen_location
-                        ),
+                        &format!("Хряк нашёл {} монет в {:.2}! 💹", amount, chosen_location),
                     )
                     .await?;
                 }

@@ -11,7 +11,7 @@ use crate::{config::utils, db::economydb};
 
 use super::{should_cancel_dialog, HandlerResult};
 
-pub const RACE_BID_MULTIPLIER: f64 = 1.3;
+pub const RACE_BID_MULTIPLIER: f64 = 1.4;
 
 #[derive(Clone)]
 pub struct RacePig {
@@ -229,9 +229,8 @@ pub async fn race_receive_number(
                                                           // Здесь можно обновить баланс в базе данных (pool)
                 economydb::add_money(&pool, msg.from.as_ref().unwrap().id.0, winnings).await?;
                 format!(
-                    "Победила свинья {}! Ты выиграл {}$!",
-                    winner.name,
-                    winnings.floor()
+                    "Победила свинья {}! Ты выиграл {:.2}$!",
+                    winner.name, winnings
                 )
             } else {
                 format!(
