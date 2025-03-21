@@ -197,12 +197,15 @@ pub mod callback {
             .unwrap_or(consts::DUEL_DEFAULT_BID);
 
         // Withdraw bids so it works good when users are in several duels at once
-        economydb::sub_money(pool, host_id, bid).await?;
+
         if let Err(why) = economydb::sub_money(pool, part_id, bid).await {
             eprintln!("Error sub money from part: {}", why);
-            bot.answer_callback_query(&q.id).text("Недостаточно денег").await?;
+            bot.answer_callback_query(&q.id)
+                .text("Недостаточно денег")
+                .await?;
             return Ok(());
         }
+        economydb::sub_money(pool, host_id, bid).await?;
 
         // Creeate a duel in table
         let host_pig = pigdb::pig_by_userid(pool, host_id).await?;
