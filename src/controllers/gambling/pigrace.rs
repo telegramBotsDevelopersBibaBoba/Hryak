@@ -241,7 +241,7 @@ pub async fn race_receive_number(
             };
             dialogue.exit().await?;
 
-            gamblingdb::pigrace_played(&pool, msg.from.as_ref().unwrap().id.0 as u32).await?;
+            gamblingdb::pigrace_played(&pool, msg.from.as_ref().unwrap().id.0).await?;
             utils::send_msg(&bot, &msg, &result_msg).await?;
         }
         None => {

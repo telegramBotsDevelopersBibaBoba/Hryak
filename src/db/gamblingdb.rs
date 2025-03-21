@@ -2,7 +2,7 @@ use crate::StoragePool;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::Row;
 
-pub async fn pigrace_played(pool: &StoragePool, user_id: u32) -> anyhow::Result<()> {
+pub async fn pigrace_played(pool: &StoragePool, user_id: u64) -> anyhow::Result<()> {
     sqlx::query(
         "INSERT INTO arcade (user_id, pigrace_last)
     VALUES (?, NOW())
@@ -48,7 +48,7 @@ pub async fn treasurehunt_last_time(
     Ok(income_time)
 }
 
-pub async fn treasurehunt_played(pool: &StoragePool, user_id: u32) -> anyhow::Result<()> {
+pub async fn treasurehunt_played(pool: &StoragePool, user_id: u64) -> anyhow::Result<()> {
     sqlx::query(
         "INSERT INTO arcade (user_id, treasurehunt_last)
     VALUES (?, NOW())

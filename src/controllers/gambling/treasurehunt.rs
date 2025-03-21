@@ -229,7 +229,7 @@ pub async fn location_chosen(
                 }
             }
 
-            gamblingdb::treasurehunt_played(&pool, msg.from.as_ref().unwrap().id.0 as u32).await?;
+            gamblingdb::treasurehunt_played(&pool, msg.from.as_ref().unwrap().id.0).await?;
             dialogue.exit().await?;
         }
         None => {
