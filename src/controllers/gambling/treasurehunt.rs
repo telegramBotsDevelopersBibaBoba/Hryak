@@ -250,8 +250,8 @@ fn simulate_treasure_hunt(location: &TreasureLocation, bid: f64) -> TreasureResu
 
     match location.difficulty {
         TreasureDifficulty::Easy => {
-            if rng.random_bool(0.6) {
-                let amount = rng.random_range(20.0..=40.0);
+            if rng.random_bool(0.5) {
+                let amount = rng.random_range(40.0..=70.0);
                 TreasureResult::Coins(bid * (amount / 100.0))
             } else {
                 TreasureResult::Nothing
@@ -259,15 +259,15 @@ fn simulate_treasure_hunt(location: &TreasureLocation, bid: f64) -> TreasureResu
         }
         TreasureDifficulty::Medium => {
             if rng.random_bool(0.4) {
-                let amount = rng.random_range(40.0..=80.0);
+                let amount = rng.random_range(70.0..=130.0);
                 TreasureResult::Coins(bid * (amount / 100.0))
             } else {
                 TreasureResult::Nothing
             }
         }
         TreasureDifficulty::Hard => {
-            if rng.random_bool(0.2) {
-                let amount = rng.random_range(80.0..=150.0);
+            if rng.random_bool(0.3) {
+                let amount = rng.random_range(130.0..=200.0);
                 TreasureResult::Coins(bid * (amount / 100.0))
             } else {
                 TreasureResult::Nothing

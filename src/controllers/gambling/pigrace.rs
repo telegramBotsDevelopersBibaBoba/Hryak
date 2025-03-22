@@ -11,7 +11,7 @@ use crate::{config::utils, db::economydb};
 
 use super::{should_cancel_dialog, HandlerResult};
 
-pub const RACE_BID_MULTIPLIER: f64 = 1.4;
+pub const RACE_BID_MULTIPLIER: f64 = 1.9;
 
 #[derive(Clone)]
 pub struct RacePig {
