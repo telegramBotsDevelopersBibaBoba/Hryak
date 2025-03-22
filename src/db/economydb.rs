@@ -143,5 +143,13 @@ pub async fn increase_daily_income(
         .bind(user_id)
         .execute(&pool.mysql_pool)
         .await?;
+
+    let mut redis_con = pool.redis_pool.get()?;
+    let daily_income: f64 = redis_con.hget(format!("bank:{}", user_id), "daily_income")?;
+    let _: () = redis_con.hset(
+        format!("bank:{}", user_id),
+        "daily_income",
+        ((daily_income + add_income) * 100.0).floor() / 100.0,
+    )?;
     Ok(())
 }
