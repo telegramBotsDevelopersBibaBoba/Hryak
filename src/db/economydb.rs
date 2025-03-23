@@ -117,7 +117,7 @@ pub async fn income_time(
 
 pub async fn do_daily_income(pool: &StoragePool, user_id: u64) -> anyhow::Result<()> {
     let income_time = income_time(pool, user_id).await?;
-    if income_time.is_some() && (Utc::now() - income_time.unwrap()).num_hours() < 24 {
+    if income_time.is_some() && (Utc::now() - income_time.unwrap()).num_hours() < 16 {
         return Err(anyhow!("Рано"));
     }
 

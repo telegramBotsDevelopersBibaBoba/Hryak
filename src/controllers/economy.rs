@@ -53,7 +53,7 @@ pub async fn economy_handle(
                     "<a href=\"tg://user?id={}\">{}</a>, рано! Подождите еще {} часов.",
                     msg.from.as_ref().unwrap().id.0,
                     msg.from.as_ref().unwrap().first_name,
-                    24 - (Utc::now() - income_time.unwrap()).num_hours()
+                    16 - (Utc::now() - income_time.unwrap()).num_hours()
                 );
                 utils::send_msg(&bot, &msg, &message).await?;
                 return Ok(());
@@ -80,7 +80,7 @@ pub async fn economy_handle(
                 economydb::sub_money(&pool, msg.from.as_ref().unwrap().id.0, amount).await
             {
                 utils::send_msg(&bot, &msg, "Недостаточно денег для перевода! 😔").await?;
-                return Ok(())
+                return Ok(());
             }
             economydb::add_money(&pool, receiver_id, amount).await?;
 
