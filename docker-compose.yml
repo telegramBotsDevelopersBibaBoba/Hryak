@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  hryak:
+    build: .
+    working_dir: /root
+    command: ["/root/target/release/Hryak"]
+    volumes:
+      - .:/root
+    ports:
+      - "8080:8080"  # Измени, если приложение использует другой порт
